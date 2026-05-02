@@ -1,0 +1,7 @@
+
+> backend@1.0.0 dev
+> node server.js
+
+◇ injected env (4) from .env // tip: ⌘ enable debugging { debug: true }
+MongoDB connected
+CallTrack API running on http://localhost:5000

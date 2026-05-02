@@ -1,0 +1,4 @@
+2026/05/02-02:59:23.759 2fb0 Creating DB E:\ALL PROJECT PORTAL\calling\backend\.wwebjs_auth\session-calltrack-crm\Default\shared_proto_db since it was missing.
+2026/05/02-02:59:24.137 2fb0 Reusing MANIFEST E:\ALL PROJECT PORTAL\calling\backend\.wwebjs_auth\session-calltrack-crm\Default\shared_proto_db/MANIFEST-000001
+2026/05/02-02:59:24.137 2fb0 Recovering log #3
+2026/05/02-02:59:24.137 2fb0 Reusing old log E:\ALL PROJECT PORTAL\calling\backend\.wwebjs_auth\session-calltrack-crm\Default\shared_proto_db/000003.log 

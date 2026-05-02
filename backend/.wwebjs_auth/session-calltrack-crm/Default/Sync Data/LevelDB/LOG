@@ -1,0 +1,4 @@
+2026/05/02-02:59:22.969 6c0 Creating DB E:\ALL PROJECT PORTAL\calling\backend\.wwebjs_auth\session-calltrack-crm\Default\Sync Data\LevelDB since it was missing.
+2026/05/02-02:59:23.572 6c0 Reusing MANIFEST E:\ALL PROJECT PORTAL\calling\backend\.wwebjs_auth\session-calltrack-crm\Default\Sync Data\LevelDB/MANIFEST-000001
+2026/05/02-02:59:23.572 6c0 Recovering log #3
+2026/05/02-02:59:23.572 6c0 Reusing old log E:\ALL PROJECT PORTAL\calling\backend\.wwebjs_auth\session-calltrack-crm\Default\Sync Data\LevelDB/000003.log 

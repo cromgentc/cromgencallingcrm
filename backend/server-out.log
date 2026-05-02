@@ -1,0 +1,7 @@
+
+> backend@1.0.0 dev
+> node server.js
+
+◇ injected env (3) from .env // tip: ⌘ override existing { override: true }
+MongoDB connected
+CallTrack API running on http://localhost:5000
