@@ -32,21 +32,25 @@ export default function AuthPage({ onAuth }) {
             <PhoneCall size={24} />
           </span>
           <div>
-            <p className="text-xl font-bold">CallTrack</p>
-            <p className="text-sm text-slate-300">Dynamic calling CRM</p>
+            <p className="text-xl font-bold">CromGen CRM</p>
+            <p className="text-sm text-slate-300">Smart calling workspace</p>
           </div>
         </div>
         <div>
-          <p className="max-w-2xl text-5xl font-bold leading-tight">Role-based dashboards, staff IDs, and call tracking.</p>
+          <p className="max-w-2xl text-5xl font-bold leading-tight">Turn every customer call into a clear next step.</p>
           <p className="mt-5 max-w-xl text-lg leading-8 text-slate-300">
-            Admin manager add karega, manager team leader add karega, TL calling staff add karega.
+            CromGen CRM brings calling teams, live status, customer queues, recordings, and follow-ups into one focused control center.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-4 text-sm">
-          {['Admin', 'Manager', 'Team Leader'].map((item) => (
-            <div key={item} className="rounded-lg border border-white/10 bg-white/5 p-4">
-              <p className="font-bold">{item}</p>
-              <p className="mt-1 text-slate-300">Email login</p>
+          {[
+            { title: 'Live Calling', detail: 'Track active calls and outcomes instantly.' },
+            { title: 'Team Flow', detail: 'Organize work from leads to follow-ups.' },
+            { title: 'CRM Insights', detail: 'See queue, tags, recordings, and reports.' },
+          ].map((item) => (
+            <div key={item.title} className="rounded-lg border border-white/10 bg-white/5 p-4">
+              <p className="font-bold">{item.title}</p>
+              <p className="mt-1 text-slate-300">{item.detail}</p>
             </div>
           ))}
         </div>
@@ -58,7 +62,7 @@ export default function AuthPage({ onAuth }) {
             <span className="grid size-11 place-items-center rounded-lg bg-slate-950 text-white">
               <PhoneCall size={22} />
             </span>
-            <p className="text-xl font-bold text-slate-950">CallTrack</p>
+            <p className="text-xl font-bold text-slate-950">CromGen CRM</p>
           </div>
 
           <h1 className="text-2xl font-bold text-slate-950">Login</h1>
