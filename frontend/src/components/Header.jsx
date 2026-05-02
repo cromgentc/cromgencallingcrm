@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Bell, CalendarDays, ChevronDown, ExternalLink, Search, Sparkles, User, Video } from 'lucide-react'
+import { Bell, CalendarDays, ChevronDown, ExternalLink, LogOut, Search, Sparkles, User, Video } from 'lucide-react'
 import { authHeaders } from '../controllers/httpController'
 import { API_ENDPOINTS, apiUrl } from '../services/api'
 import { getNavigationItemsForUser } from '../utils/navigation'
@@ -39,7 +39,7 @@ function buildGoogleEventsUrl(config = {}) {
   return url.toString()
 }
 
-export default function Header({ dashboard, currentUser, onViewChange }) {
+export default function Header({ dashboard, currentUser, onLogout, onViewChange }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
@@ -325,6 +325,10 @@ export default function Header({ dashboard, currentUser, onViewChange }) {
               <button type="button" onClick={() => onViewChange?.('profile')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-bold text-slate-700 hover:bg-slate-50">
                 <User size={16} />
                 Profile
+              </button>
+              <button type="button" onClick={onLogout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-bold text-rose-700 hover:bg-rose-50">
+                <LogOut size={16} />
+                Logout
               </button>
             </div>
           ) : null}
