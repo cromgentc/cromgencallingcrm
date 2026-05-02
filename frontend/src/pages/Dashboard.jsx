@@ -29,6 +29,7 @@ import { fallbackDashboard } from '../data/fallbackData'
 import { uploadCallRecording } from '../controllers/callController'
 import { getDashboardData } from '../controllers/dashboardController'
 import { getReports } from '../controllers/reportController'
+import { getNavigationItemsForUser } from '../utils/navigation'
 
 function getInitialView() {
   const params = new URLSearchParams(window.location.search)
@@ -55,6 +56,21 @@ export default function Dashboard({ currentUser, onLogout, onUserUpdated }) {
   const canViewTaggings = ['admin', 'manager', 'teamleader', 'staff'].includes(currentUser?.role)
   const canViewReports = ['manager', 'teamleader', 'staff'].includes(currentUser?.role)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    const pageTitles = new Map(
+      getNavigationItemsForUser(currentUser)
+        .flatMap((item) => item.children || [item])
+        .map((item) => [item.id, item.label]),
+    )
+    pageTitles.set('profile', 'Profile')
+    pageTitles.set('team', 'Team Directory')
+    pageTitles.set('staff-management', 'Staff Management')
+    pageTitles.set('staff-detail', selectedStaff?.name || 'Staff Details')
+    pageTitles.set('lead-detail', selectedLead?.leadName || selectedLead?.name || 'Lead Details')
+
+    document.title = `${pageTitles.get(activeView) || 'Dashboard'} | CromGen CRM`
+  }, [activeView, currentUser, selectedLead, selectedStaff])
 
   function loadDashboard() {
     return getDashboardData()

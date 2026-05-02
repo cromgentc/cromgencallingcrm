@@ -19,6 +19,15 @@ function App() {
     }
   }, [auth])
 
+  useEffect(() => {
+    if (dialerMatch) {
+      document.title = 'Mobile Dialer | CromGen CRM'
+      return
+    }
+
+    document.title = auth ? 'Dashboard | CromGen CRM' : 'Login | CromGen CRM'
+  }, [auth, dialerMatch])
+
   function handleAuth(response) {
     setAuth(response)
   }
