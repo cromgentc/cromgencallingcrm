@@ -23,8 +23,6 @@ export const API_ENDPOINTS = {
     delete: (callId) => `/calls/${callId}`,
     bulkDelete: '/calls/bulk-delete',
     update: (callId) => `/calls/${callId}`,
-    recording: (callId) => `/calls/${callId}/recording`,
-    recordingDownload: (callId) => `/calls/${callId}/recording/download`,
   },
   customers: {
     bulk: '/customers/bulk',
@@ -51,7 +49,6 @@ export const API_ENDPOINTS = {
     outcall: (token) => `/dialer/${token}/outcall`,
     connectCall: (token, callId) => `/dialer/${token}/calls/${callId}/connect`,
     completeCall: (token, callId) => `/dialer/${token}/calls/${callId}/complete`,
-    recording: (token, callId) => `/dialer/${token}/calls/${callId}/recording`,
     messages: (token) => `/dialer/${token}/messages`,
     replyMessage: (token, messageId) => `/dialer/${token}/messages/${messageId}/reply`,
     sessions: '/dialer/sessions',
@@ -85,8 +82,5 @@ export const API_ENDPOINTS = {
     update: (staffId) => `/staff/${staffId}`,
     delete: (staffId) => `/staff/${staffId}`,
     bulkDelete: '/staff/bulk-delete',
-  },
-  settings: {
-    cloudinary: '/settings/cloudinary',
   },
 }

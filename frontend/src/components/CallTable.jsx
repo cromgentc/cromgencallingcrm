@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { CheckCircle2, Download, Edit3, Headphones, Save, Trash2, X } from 'lucide-react'
-import { deleteCall, deleteCalls, downloadCallRecording, updateCall } from '../controllers/callController'
+import { CheckCircle2, Edit3, Headphones, Save, Trash2, X } from 'lucide-react'
+import { deleteCall, deleteCalls, updateCall } from '../controllers/callController'
 
 const sentimentClasses = {
   Interested: 'bg-emerald-50 text-emerald-700',
@@ -34,20 +34,17 @@ function statusLabel(call) {
 export default function CallTable({
   calls,
   currentUser,
-  canDownloadRecordings = false,
   enableTagging = true,
   onCallDeleted,
   onCallsDeleted,
   onCallUpdated,
 }) {
-  const [downloadError, setDownloadError] = useState('')
   const [drafts, setDrafts] = useState({})
   const [editingCallId, setEditingCallId] = useState('')
   const [selectedCallIds, setSelectedCallIds] = useState([])
 
   const isAdmin = currentUser?.role === 'admin'
   const canViewActiveTaggings = !['admin', 'manager'].includes(currentUser?.role)
-  const canPlayRecording = ['admin', 'manager', 'teamleader'].includes(currentUser?.role)
   const activeCalls = useMemo(() => calls.filter((call) => !isSavedCall(call)), [calls])
   const savedCalls = useMemo(() => calls.filter(isSavedCall), [calls])
 
@@ -91,15 +88,6 @@ export default function CallTable({
     setSelectedCallIds((current) => current.filter((callId) => !deletedIds.includes(callId)))
   }
 
-  async function handleDownload(call) {
-    try {
-      setDownloadError('')
-      await downloadCallRecording(call)
-    } catch (error) {
-      setDownloadError(error.message || 'Recording download failed')
-    }
-  }
-
   function updateDraft(callId, patch) {
     setDrafts((current) => ({
       ...current,
@@ -121,12 +109,6 @@ export default function CallTable({
 
   return (
     <section className="space-y-4">
-      {downloadError ? (
-        <div className="rounded-lg border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-          {downloadError}
-        </div>
-      ) : null}
-
       {canViewActiveTaggings ? (
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 px-4 py-3">
@@ -195,7 +177,7 @@ export default function CallTable({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
           <div>
             <h2 className="font-bold text-slate-950">Saved Tagging Details</h2>
-            <p className="text-sm font-semibold text-slate-500">Saved call outcomes and recordings are listed here.</p>
+            <p className="text-sm font-semibold text-slate-500">Saved call outcomes are listed here.</p>
           </div>
           {isAdmin && savedCalls.length ? (
             <div className="flex flex-wrap gap-2">
@@ -272,14 +254,6 @@ export default function CallTable({
                     <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">{call.remark || '-'}</p>
                   )}
 
-                  {call.recordingUrl && canPlayRecording ? (
-                    <audio className="h-10 w-full" controls src={call.recordingUrl}>
-                      <a href={call.recordingUrl}>Recording</a>
-                    </audio>
-                  ) : (
-                    <span className="text-xs font-bold text-slate-400">{call.recordingUrl ? 'Recording hidden' : 'No recording'}</span>
-                  )}
-
                   {isAdmin ? (
                     <div className="flex flex-wrap gap-2">
                       {isEditing ? (
@@ -298,11 +272,6 @@ export default function CallTable({
                           Edit
                         </button>
                       )}
-                      {call.recordingUrl && canDownloadRecordings ? (
-                        <button type="button" onClick={() => handleDownload(call)} className="grid size-9 place-items-center rounded-lg border border-slate-200 text-slate-700" title="Download">
-                          <Download size={15} />
-                        </button>
-                      ) : null}
                       <button type="button" onClick={() => handleDelete(call)} className="grid size-9 place-items-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700" title="Delete">
                         <Trash2 size={15} />
                       </button>
@@ -334,7 +303,6 @@ export default function CallTable({
                 <th className="px-4 py-3">Duration</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Remark</th>
-                <th className="px-4 py-3">Recording</th>
                 <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
@@ -389,20 +357,6 @@ export default function CallTable({
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {call.recordingUrl && canPlayRecording ? (
-                        <div className="flex min-w-0 items-center gap-2">
-                          <Headphones className="shrink-0 text-teal-600" size={18} />
-                          <audio className="h-9 w-56 min-w-0" controls src={call.recordingUrl}>
-                            <a href={call.recordingUrl}>Recording</a>
-                          </audio>
-                        </div>
-                      ) : call.recordingUrl ? (
-                        <span className="text-xs font-bold text-slate-400">Hidden</span>
-                      ) : (
-                        <span className="text-xs font-bold text-slate-400">No recording</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
                       {isAdmin ? (
                         <div className="flex flex-wrap gap-2">
                           {isEditing ? (
@@ -419,11 +373,6 @@ export default function CallTable({
                               <Edit3 size={15} />
                             </button>
                           )}
-                          {call.recordingUrl && canDownloadRecordings ? (
-                            <button type="button" onClick={() => handleDownload(call)} className="grid size-9 place-items-center rounded-lg border border-slate-200 text-slate-700" title="Download">
-                              <Download size={15} />
-                            </button>
-                          ) : null}
                           <button type="button" onClick={() => handleDelete(call)} className="grid size-9 place-items-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700" title="Delete">
                             <Trash2 size={15} />
                           </button>

@@ -39,14 +39,14 @@ export default function AuthPage({ onAuth }) {
         <div>
           <p className="max-w-2xl text-5xl font-bold leading-tight">Turn every customer call into a clear next step.</p>
           <p className="mt-5 max-w-xl text-lg leading-8 text-slate-300">
-            CromGen CRM brings calling teams, live status, customer queues, recordings, and follow-ups into one focused control center.
+            CromGen CRM brings calling teams, live status, customer queues, and follow-ups into one focused control center.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-4 text-sm">
           {[
             { title: 'Live Calling', detail: 'Track active calls and outcomes instantly.' },
             { title: 'Team Flow', detail: 'Organize work from leads to follow-ups.' },
-            { title: 'CRM Insights', detail: 'See queue, tags, recordings, and reports.' },
+            { title: 'CRM Insights', detail: 'See queue, tags, and reports.' },
           ].map((item) => (
             <div key={item.title} className="rounded-lg border border-white/10 bg-white/5 p-4">
               <p className="font-bold">{item.title}</p>

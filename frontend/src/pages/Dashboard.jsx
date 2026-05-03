@@ -26,7 +26,6 @@ import TeamDirectory from '../components/TeamDirectory'
 import WhatsAppView from '../components/WhatsAppView'
 import CrmHomePage from '../components/dashboard/CrmHomePage'
 import { fallbackDashboard } from '../data/fallbackData'
-import { uploadCallRecording } from '../controllers/callController'
 import { getDashboardData } from '../controllers/dashboardController'
 import { getReports } from '../controllers/reportController'
 import { getNavigationItemsForUser } from '../utils/navigation'
@@ -52,7 +51,6 @@ export default function Dashboard({ currentUser, onLogout, onUserUpdated }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const canManage = ['admin', 'manager', 'teamleader'].includes(currentUser?.role)
-  const canDownloadRecordings = ['admin', 'manager', 'teamleader'].includes(currentUser?.role)
   const canViewTaggings = ['admin', 'manager', 'teamleader', 'staff'].includes(currentUser?.role)
   const canViewReports = ['manager', 'teamleader', 'staff'].includes(currentUser?.role)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -106,15 +104,6 @@ export default function Dashboard({ currentUser, onLogout, onUserUpdated }) {
     }
   }, [activeView])
 
-  async function handleRecordingUploaded(callId, file) {
-    const updatedCall = await uploadCallRecording(callId, file)
-
-    setDashboard((current) => ({
-      ...current,
-      calls: current.calls.map((call) => (call.id === callId ? updatedCall : call)),
-    }))
-  }
-
   function handleCallUpdated(call) {
     setDashboard((current) => ({
       ...current,
@@ -164,7 +153,6 @@ export default function Dashboard({ currentUser, onLogout, onUserUpdated }) {
         <>
           <CrmHomePage
             dashboard={dashboard}
-            canDownloadRecordings={canDownloadRecordings}
             currentUser={currentUser}
             onNavigate={setActiveView}
             onSelectStat={handleStatSelect}
@@ -182,7 +170,6 @@ export default function Dashboard({ currentUser, onLogout, onUserUpdated }) {
       return (
         <LeadsView
           currentUser={currentUser}
-          canDownloadRecordings={canDownloadRecordings}
           onLeadSelect={handleLeadSelect}
           refreshToken={leadStoreRefreshToken}
         />
@@ -190,7 +177,7 @@ export default function Dashboard({ currentUser, onLogout, onUserUpdated }) {
     }
 
     if (activeView.startsWith('sales-')) {
-      return <SalesView view={activeView} calls={dashboard.calls} canDownloadRecordings={canDownloadRecordings} />
+      return <SalesView view={activeView} calls={dashboard.calls} />
     }
 
     if (activeView.startsWith('activities-') || activeView.startsWith('inventory-')) {
@@ -219,8 +206,6 @@ export default function Dashboard({ currentUser, onLogout, onUserUpdated }) {
             onCallUpdated={handleCallUpdated}
             onCallDeleted={handleCallDeleted}
             onCallsDeleted={handleCallsDeleted}
-            canDownloadRecordings={canDownloadRecordings}
-            onRecordingUploaded={handleRecordingUploaded}
           />
         </>
       )
@@ -302,7 +287,6 @@ export default function Dashboard({ currentUser, onLogout, onUserUpdated }) {
       return (
         <StaffDetailPage
           calls={dashboard.calls}
-          canDownloadRecordings={canDownloadRecordings}
           staff={selectedStaff}
           onBack={() => setActiveView('team')}
         />

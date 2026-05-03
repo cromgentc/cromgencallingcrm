@@ -1,4 +1,4 @@
-import { CalendarClock, CheckCircle2, Clock3, MoreHorizontal, PhoneCall, Sparkles, Users } from 'lucide-react'
+import { CheckCircle2, Clock3, MoreHorizontal, PhoneCall, Sparkles, Users } from 'lucide-react'
 import StatCard from '../StatCard'
 import Timeline from '../Timeline'
 
@@ -46,7 +46,6 @@ function formatCalendarDay(value) {
 
 export default function CrmHomePage({
   dashboard,
-  canDownloadRecordings,
   currentUser,
   onNavigate,
   onSelectStat,
@@ -137,16 +136,6 @@ export default function CrmHomePage({
               Leads
             </button>
 
-            {canDownloadRecordings && canViewTaggings ? (
-              <button
-                type="button"
-                onClick={() => onNavigate?.('calls')}
-                className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-teal-200 hover:text-teal-800"
-              >
-                <CalendarClock size={18} />
-                Recordings
-              </button>
-            ) : null}
           </div>
         </div>
       </section>

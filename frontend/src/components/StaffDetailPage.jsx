@@ -1,6 +1,6 @@
 import CallTable from './CallTable'
 
-export default function StaffDetailPage({ calls = [], canDownloadRecordings, onBack, staff }) {
+export default function StaffDetailPage({ calls = [], onBack, staff }) {
   const staffCalls = calls.filter((call) => call.agent === staff?.name)
 
   return (
@@ -18,7 +18,7 @@ export default function StaffDetailPage({ calls = [], canDownloadRecordings, onB
           <div className="rounded-lg bg-sky-50 p-3"><p className="text-sm text-sky-700">Callback</p><p className="text-2xl font-bold text-sky-800">{staffCalls.filter((call) => call.sentiment === 'Callback').length}</p></div>
         </div>
       </section>
-      <CallTable calls={staffCalls} canDownloadRecordings={canDownloadRecordings} enableTagging={false} />
+      <CallTable calls={staffCalls} enableTagging={false} />
     </div>
   )
 }

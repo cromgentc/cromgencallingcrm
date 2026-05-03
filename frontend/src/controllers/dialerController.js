@@ -1,5 +1,5 @@
 import { request } from './httpController'
-import { API_ENDPOINTS, apiUrl } from '../services/api'
+import { API_ENDPOINTS } from '../services/api'
 
 export function createDialerSession() {
   return request(API_ENDPOINTS.dialer.sessions, {
@@ -45,23 +45,6 @@ export function connectDialerCall(token, callId) {
   return request(API_ENDPOINTS.dialer.connectCall(token, callId), {
     method: 'POST',
   })
-}
-
-export async function uploadDialerRecording(token, callId, file) {
-  const formData = new FormData()
-  formData.append('recording', file)
-
-  const response = await fetch(apiUrl(API_ENDPOINTS.dialer.recording(token, callId)), {
-    method: 'POST',
-    body: formData,
-  })
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Recording upload failed' }))
-    throw new Error(error.message)
-  }
-
-  return response.json()
 }
 
 export function getDialerMessages(token) {

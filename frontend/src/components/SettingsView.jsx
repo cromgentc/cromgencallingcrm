@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { CalendarDays, Camera, CheckCircle2, ChevronDown, Cloud, ExternalLink, LinkIcon, Network, Save, Server, Settings2, Users } from 'lucide-react'
+import { useState } from 'react'
+import { CalendarDays, Camera, CheckCircle2, ChevronDown, ExternalLink, LinkIcon, Network, Save, Server, Settings2, Users } from 'lucide-react'
 import { authHeaders } from '../controllers/httpController'
 import { API_ENDPOINTS, apiUrl } from '../services/api'
 import { readUserJson, writeUserJson } from '../utils/userStorage'
@@ -8,7 +8,6 @@ const defaultGoogleClientId = '406233399078-76oiq033tjqbkg1uel3pc4an3n0hibeb.app
 const defaultGoogleApiKey = 'AIzaSyDbK41VJzlMoTsakHzIlUGVGxwcZn_ecHI'
 
 const integrationDefaults = {
-  cloudinary: { cloudName: '', apiKey: '', apiSecret: '' },
   google: {
     clientId: defaultGoogleClientId,
     clientSecret: '',
@@ -26,7 +25,6 @@ const integrationDefaults = {
 }
 
 const integrations = [
-  { id: 'cloudinary', title: 'Cloudinary API', description: 'Paste credentials for recording and media uploads.', icon: Cloud },
   { id: 'google', title: 'Google Calendar & Meet API', description: 'API details for Meet creation, fetching, and meeting tracking.', icon: CalendarDays },
   { id: 'zoho', title: 'Zoho CRM', description: 'Zoho CRM connection details for lead and customer sync.', icon: Server },
   { id: 'linkedin', title: 'LinkedIn Connect', description: 'App credentials for LinkedIn lead source connection.', icon: Network },
@@ -155,30 +153,8 @@ export default function SettingsView({ initialIntegration = '' }) {
   const callbackState = callbackParams.get('state')
   const callbackSection = ['google', 'linkedin', 'facebook', 'instagram'].includes(callbackState) ? callbackState : callbackCode ? 'google' : ''
   const [configs, setConfigs] = useState(loadIntegrations)
-  const [openIntegration, setOpenIntegration] = useState(callbackSection || initialIntegration || 'cloudinary')
+  const [openIntegration, setOpenIntegration] = useState(callbackSection || initialIntegration || 'google')
   const [integrationMessage, setIntegrationMessage] = useState('')
-
-  useEffect(() => {
-    fetch(apiUrl(API_ENDPOINTS.settings.cloudinary), { headers: authHeaders() })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => {
-        if (!data) {
-          return
-        }
-
-        setConfigs((current) => ({
-          ...current,
-          cloudinary: {
-            ...current.cloudinary,
-            cloudName: data.cloudName || current.cloudinary.cloudName,
-            apiKey: data.apiKey || current.cloudinary.apiKey,
-            apiSecret: data.apiSecretSet ? current.cloudinary.apiSecret : current.cloudinary.apiSecret,
-            connected: Boolean(data.cloudName && data.apiKey && data.apiSecretSet),
-          },
-        }))
-      })
-      .catch(() => {})
-  }, [])
 
   function persist(nextConfigs, label) {
     writeUserJson('calltrack_integrations', nextConfigs)
@@ -196,51 +172,11 @@ export default function SettingsView({ initialIntegration = '' }) {
   }
 
   async function saveIntegration(section) {
-    if (section === 'cloudinary') {
-      const cloudinaryConfig = configs.cloudinary || {}
-
-      try {
-        setIntegrationMessage('Saving Cloudinary settings...')
-        const response = await fetch(apiUrl(API_ENDPOINTS.settings.cloudinary), {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            ...authHeaders(),
-          },
-          body: JSON.stringify(cloudinaryConfig),
-        })
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Cloudinary settings could not be saved')
-        }
-
-        const nextConfigs = {
-          ...configs,
-          cloudinary: {
-            ...cloudinaryConfig,
-            connected: true,
-          },
-        }
-
-        setConfigs(nextConfigs)
-        persist(nextConfigs, 'Cloudinary settings saved. Call recordings will upload to this account.')
-      } catch (error) {
-        setIntegrationMessage(error.message || 'Cloudinary settings could not be saved')
-      }
-      return
-    }
-
     persist(configs, `${integrations.find((item) => item.id === section)?.title || 'API'} saved`)
   }
 
   async function saveAllIntegrations(event) {
     event.preventDefault()
-    if (configs.cloudinary?.cloudName || configs.cloudinary?.apiKey || configs.cloudinary?.apiSecret) {
-      await saveIntegration('cloudinary')
-      return
-    }
-
     persist(configs, 'All API settings saved')
   }
 

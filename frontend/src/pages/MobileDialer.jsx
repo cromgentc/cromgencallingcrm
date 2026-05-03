@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CheckCircle2, Headphones, Lock, LogOut, Phone, PhoneCall, Power, UserCheck } from 'lucide-react'
 import ChatThread from '../components/ChatThread'
-import { authorizeDialer, completeDialerCall, connectDialerCall, createDialerOutcall, getDialerMessages, getNextDialerCall, replyDialerMessage, updateDialerStatus, uploadDialerRecording } from '../controllers/dialerController'
+import { authorizeDialer, completeDialerCall, connectDialerCall, createDialerOutcall, getDialerMessages, getNextDialerCall, replyDialerMessage, updateDialerStatus } from '../controllers/dialerController'
 
 const callTags = ['Interested', 'Hot Lead', 'Not Interested', 'No Response', 'Call Disconnected', 'Callback', 'Call Handling']
-const nativeCallRecordingNote = 'Mobile browser direct phone-call conversation audio capture nahi kar sakta. Customer voice record karni ho to call Speaker ON par rakho; earpiece/Bluetooth par customer voice record nahi hogi.'
 
 function formatElapsedTime(start) {
   const startedAt = start ? new Date(start) : null
@@ -42,28 +41,19 @@ export default function MobileDialer({ token }) {
   const [outcall, setOutcall] = useState({ customer: '', phone: '' })
   const [showOutcallForm, setShowOutcallForm] = useState(false)
   const [nextCountdown, setNextCountdown] = useState(0)
-  const [uploadingRecording, setUploadingRecording] = useState(false)
-  const [isRecording, setIsRecording] = useState(false)
   const [callDuration, setCallDuration] = useState('00:00')
-  const [recordingUrl, setRecordingUrl] = useState('')
   const [message, setMessage] = useState('')
   const [staffMessages, setStaffMessages] = useState([])
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [error, setError] = useState('')
   const nextTimerRef = useRef(null)
   const durationTimerRef = useRef(null)
-  const recorderRef = useRef(null)
-  const recordingChunksRef = useRef([])
-  const recordingCallRef = useRef(null)
-  const recordingStreamRef = useRef(null)
-  const recordingStopResolveRef = useRef(null)
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), [])
 
   useEffect(() => {
     return () => {
       clearTimeout(nextTimerRef.current)
       clearInterval(durationTimerRef.current)
-      stopAutoRecording()
     }
   }, [])
 
@@ -81,11 +71,6 @@ export default function MobileDialer({ token }) {
       setError('Messages could not be loaded.')
     }
   }, [token])
-
-  function bestRecordingMimeType() {
-    const candidates = ['audio/mpeg', 'audio/mp4', 'audio/webm;codecs=opus', 'audio/webm']
-    return candidates.find((type) => window.MediaRecorder?.isTypeSupported?.(type)) || ''
-  }
 
   function stopDurationTimer() {
     clearInterval(durationTimerRef.current)
@@ -125,105 +110,7 @@ export default function MobileDialer({ token }) {
     stopDurationTimer()
   }
 
-  async function uploadRecordedBlob(blob, callId, mimeType) {
-    if (!blob?.size || !callId) {
-      return
-    }
-
-    const extension = mimeType.includes('mpeg') ? 'mp3' : mimeType.includes('mp4') ? 'm4a' : 'webm'
-    const file = new File([blob], `${callId}-recording.${extension}`, { type: mimeType || blob.type || 'audio/webm' })
-    setUploadingRecording(true)
-    const response = await uploadDialerRecording(token, callId, file)
-    setRecordingUrl(response.recordingUrl)
-    setMessage('Recording upload ho gayi. Playback admin panel mein milega.')
-    setUploadingRecording(false)
-  }
-
-  async function startAutoRecording(call) {
-    try {
-      if (!call || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-        setMessage('Call open ho gaya, lekin is device/browser par automatic recording support nahi hai.')
-        return
-      }
-
-      stopAutoRecording()
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: true,
-        },
-      })
-      const mimeType = bestRecordingMimeType()
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
-
-      recordingChunksRef.current = []
-      recordingCallRef.current = call.id
-      recordingStreamRef.current = stream
-      recorderRef.current = recorder
-
-      recorder.ondataavailable = (event) => {
-        if (event.data?.size) {
-          recordingChunksRef.current.push(event.data)
-        }
-      }
-
-      recorder.onstop = () => {
-        const chunks = recordingChunksRef.current
-        const callId = recordingCallRef.current
-        const type = recorder.mimeType || mimeType || 'audio/webm'
-        recordingChunksRef.current = []
-        recordingCallRef.current = null
-        recordingStreamRef.current?.getTracks().forEach((track) => track.stop())
-        recordingStreamRef.current = null
-
-        uploadRecordedBlob(new Blob(chunks, { type }), callId, type)
-          .catch((err) => {
-            setUploadingRecording(false)
-            setError(err.message || 'Recording upload failed.')
-          })
-          .finally(() => {
-            recordingStopResolveRef.current?.()
-            recordingStopResolveRef.current = null
-          })
-      }
-
-      recorder.start(1000)
-      setIsRecording(true)
-      setMessage(`Recording start ho gayi. ${nativeCallRecordingNote}`)
-    } catch {
-      setMessage('Recording ke liye microphone permission required hai.')
-    }
-  }
-
-  function stopAutoRecording({ waitForUpload = false } = {}) {
-    const recorder = recorderRef.current
-    recorderRef.current = null
-    setIsRecording(false)
-
-    if (!recorder) {
-      recordingStreamRef.current?.getTracks().forEach((track) => track.stop())
-      recordingStreamRef.current = null
-      return Promise.resolve()
-    }
-
-    const stopped = new Promise((resolve) => {
-      recordingStopResolveRef.current = resolve
-    })
-
-    if (recorder && recorder.state !== 'inactive') {
-      recorder.stop()
-    } else {
-      recordingStreamRef.current?.getTracks().forEach((track) => track.stop())
-      recordingStreamRef.current = null
-      recordingStopResolveRef.current?.()
-      recordingStopResolveRef.current = null
-    }
-
-    return waitForUpload ? stopped : Promise.resolve()
-  }
-
-  async function connectRecordAndOpenDialer(call, { openDialer = true } = {}) {
+  async function connectAndOpenDialer(call, { openDialer = true } = {}) {
     if (!call?.id) {
       return
     }
@@ -231,7 +118,6 @@ export default function MobileDialer({ token }) {
     const response = await connectDialerCall(token, call.id)
     setSession(response.session)
     setActiveCall(response.call)
-    await startAutoRecording(response.call)
 
     if (openDialer && response.call?.phone) {
       window.location.href = `tel:${response.call.phone}`
@@ -250,9 +136,8 @@ export default function MobileDialer({ token }) {
 
     setActiveCall(response.call)
     setTagForm({ sentiment: 'Interested' })
-    setRecordingUrl('')
     setNextCountdown(0)
-    await connectRecordAndOpenDialer(response.call)
+    await connectAndOpenDialer(response.call)
   }
 
   async function handleAuthorize(event) {
@@ -296,7 +181,6 @@ export default function MobileDialer({ token }) {
       setActiveCall(null)
       setNextCountdown(0)
       clearTimeout(nextTimerRef.current)
-      stopAutoRecording()
       setMessage('Not Ready. Ab new calls assign nahi hongi.')
     } catch (err) {
       setError(err.message || 'Status update failed.')
@@ -311,23 +195,9 @@ export default function MobileDialer({ token }) {
       setSession(response.session)
       setActiveCall(response.call)
       setTagForm({ sentiment: 'Interested' })
-      setRecordingUrl('')
-      await connectRecordAndOpenDialer(response.call)
+      await connectAndOpenDialer(response.call)
     } catch (err) {
       setError(err.message || 'Outcall start nahi ho paya.')
-    }
-  }
-
-  async function handleStartRecording() {
-    try {
-      if (!currentCall || isRecording) {
-        return
-      }
-
-      setError('')
-      await connectRecordAndOpenDialer(currentCall, { openDialer: false })
-    } catch (err) {
-      setError(err.message || 'Recording start nahi ho payi.')
     }
   }
 
@@ -336,8 +206,7 @@ export default function MobileDialer({ token }) {
       event.preventDefault()
       setError('')
       clearTimeout(nextTimerRef.current)
-      setMessage(isRecording ? 'Call end hua. Recording upload ho rahi hai...' : 'Call tag save ho raha hai...')
-      await stopAutoRecording({ waitForUpload: true })
+      setMessage('Call tag save ho raha hai...')
       const response = await completeDialerCall(token, currentCall.id, tagForm)
       setSession(response.session)
       setActiveCall(response.call)
@@ -374,7 +243,6 @@ export default function MobileDialer({ token }) {
     setSession(null)
     setActiveCall(null)
     setNextCountdown(0)
-    stopAutoRecording()
     setMessage('Dialer logout ho gaya.')
   }
 
@@ -495,18 +363,9 @@ export default function MobileDialer({ token }) {
                   <p className="text-xs font-bold uppercase text-teal-100">Call Duration</p>
                   <p className="mt-1 font-mono text-3xl font-bold text-white">{callDuration}</p>
                 </div>
-                <button type="button" onClick={() => connectRecordAndOpenDialer(currentCall).catch((err) => setError(err.message || 'Call could not be opened.'))} className="mt-3 flex min-h-11 w-full min-w-0 items-center justify-center gap-2 rounded-lg bg-teal-500 px-3 py-2 text-center font-bold text-white">
+                <button type="button" onClick={() => connectAndOpenDialer(currentCall).catch((err) => setError(err.message || 'Call could not be opened.'))} className="mt-3 flex min-h-11 w-full min-w-0 items-center justify-center gap-2 rounded-lg bg-teal-500 px-3 py-2 text-center font-bold text-white">
                   <Phone size={18} />
-                  <span className="break-all">Call & Recording Start {currentCall.phone}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleStartRecording}
-                  disabled={isRecording || uploadingRecording}
-                  className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-500 px-3 font-bold text-white disabled:opacity-60"
-                >
-                  <Headphones size={18} />
-                  {isRecording ? 'Recording chal rahi hai...' : 'Start Recording'}
+                  <span className="break-all">Call {currentCall.phone}</span>
                 </button>
                 <form onSubmit={handleCallComplete} className="mt-4 space-y-3">
                   <select className="h-11 w-full rounded-lg border border-teal-200/30 bg-white px-3 text-slate-950 outline-none" value={tagForm.sentiment} onChange={(event) => setTagForm({ ...tagForm, sentiment: event.target.value })}>
@@ -517,13 +376,6 @@ export default function MobileDialer({ token }) {
                     End Call & Save Tag
                   </button>
                 </form>
-                <p className="mt-3 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-center text-sm font-bold text-white">
-                  {uploadingRecording ? 'Recording upload ho rahi hai...' : isRecording ? 'Recording active hai. Customer voice ke liye Speaker ON rakho.' : 'Phone dialer open hote hi recording start hogi. Speaker ON rakho.'}
-                </p>
-                <p className="mt-3 rounded-lg border border-amber-200/30 bg-amber-200/10 px-3 py-2 text-center text-xs font-bold text-amber-100">
-                  {nativeCallRecordingNote}
-                </p>
-                {recordingUrl ? <p className="mt-3 text-center text-xs font-bold text-teal-100">Recording saved. Playback admin panel mein available hai.</p> : null}
                 {nextCountdown > 0 ? (
                   <p className="mt-3 rounded-lg bg-white/10 px-3 py-2 text-center text-sm font-bold text-white">
                     Next call {nextCountdown}s mein. Stop karne ke liye Not Ready tap karo.
