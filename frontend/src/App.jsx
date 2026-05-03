@@ -4,7 +4,7 @@ import Dashboard from './pages/Dashboard'
 import MobileDialer from './pages/MobileDialer'
 
 function App() {
-  const dialerMatch = window.location.pathname.match(/^\/dialer\/([^/]+)/)
+  const dialerMatch = window.location.pathname.match(/^\/(?:dialer|dailer)\/([^/]+)/)
   const [auth, setAuth] = useState(() => {
     const token = localStorage.getItem('calltrack_token')
     const user = localStorage.getItem('calltrack_user')

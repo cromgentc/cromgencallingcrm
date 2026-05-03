@@ -53,6 +53,10 @@ app.use('/api/auth', authRoutes)
 app.use('/api/staff', staffRoutes)
 app.use('/api/settings', settingRoutes)
 
+app.get(/^\/dailer\/(.+)/, (req, res) => {
+  res.redirect(301, `/dialer/${req.params[0]}`)
+})
+
 if (fs.existsSync(frontendIndexPath)) {
   app.use(express.static(frontendDistPath))
   app.get(/^(?!\/api).*/, (req, res) => {
