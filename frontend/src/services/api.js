@@ -1,4 +1,4 @@
-const defaultApiUrl = import.meta.env.DEV ? 'http://localhost:5000/' : window.location.origin
+const defaultApiUrl = 'https://cromgen-callingcrm.onrender.com'
 
 export const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl
 

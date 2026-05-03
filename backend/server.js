@@ -22,7 +22,9 @@ const whatsappRoutes = require('./routes/whatsappRoutes')
 
 const app = express()
 const PORT = process.env.PORT || 5000
-const frontendDistPath = path.resolve(__dirname, '../frontend/dist')
+const frontendDistPath = fs.existsSync(path.join(__dirname, 'public', 'index.html'))
+  ? path.join(__dirname, 'public')
+  : path.resolve(__dirname, '../frontend/dist')
 const frontendIndexPath = path.join(frontendDistPath, 'index.html')
 
 app.use(cors())
