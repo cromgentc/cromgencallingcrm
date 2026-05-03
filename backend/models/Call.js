@@ -14,6 +14,7 @@ const callSchema = new mongoose.Schema(
       default: 'Neutral',
     },
     remark: { type: String, default: '' },
+    connectedAt: { type: Date },
     completedAt: { type: Date },
     recordingUrl: { type: String, default: '' },
     recordingPublicId: { type: String, default: '' },

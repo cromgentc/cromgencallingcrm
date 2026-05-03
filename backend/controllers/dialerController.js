@@ -23,8 +23,10 @@ function mapDialerCall(call) {
     phone: call.phone,
     agent: call.agent,
     stage: call.stage,
+    duration: call.duration,
     sentiment: call.sentiment,
     remark: call.remark,
+    connectedAt: call.connectedAt,
   }
 }
 
@@ -243,7 +245,7 @@ async function completeCall(req, res, next) {
     call.remark = remark || ''
     call.stage = 'Completed'
     call.completedAt = new Date()
-    call.duration = formatDuration(call.createdAt, call.completedAt)
+    call.duration = formatDuration(call.connectedAt || call.createdAt, call.completedAt)
     await call.save()
 
     await CustomerQueue.findOneAndUpdate(
@@ -285,6 +287,7 @@ async function connectCall(req, res, next) {
     }
 
     call.stage = 'On Call'
+    call.connectedAt = call.connectedAt || new Date()
     await call.save()
 
     session.status = 'on_call'

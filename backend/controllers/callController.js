@@ -35,6 +35,7 @@ function mapCall(call) {
     sentiment: call.sentiment,
     remark: call.remark,
     createdAt: call.createdAt,
+    connectedAt: call.connectedAt,
     completedAt: call.completedAt,
     recordingUrl: call.recordingUrl,
     recordingPublicId: call.recordingPublicId,
@@ -107,9 +108,12 @@ async function updateCall(req, res, next) {
       call.sentiment = sentiment
       call.completedAt = new Date()
       call.stage = stage || 'Completed'
-      call.duration = call.duration && call.duration !== '00:00' ? call.duration : formatDuration(call.createdAt, call.completedAt)
+      call.duration = call.duration && call.duration !== '00:00' ? call.duration : formatDuration(call.connectedAt || call.createdAt, call.completedAt)
     } else if (stage) {
       call.stage = stage
+      if (stage === 'On Call' && !call.connectedAt) {
+        call.connectedAt = new Date()
+      }
     }
 
     if (remark !== undefined) {

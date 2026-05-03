@@ -6,6 +6,25 @@ import { authorizeDialer, completeDialerCall, connectDialerCall, createDialerOut
 const callTags = ['Interested', 'Hot Lead', 'Not Interested', 'No Response', 'Call Disconnected', 'Callback', 'Call Handling']
 const nativeCallRecordingNote = 'Mobile browser direct phone-call conversation audio capture nahi kar sakta. Customer voice record karni ho to call Speaker ON par rakho; earpiece/Bluetooth par customer voice record nahi hogi.'
 
+function formatElapsedTime(start) {
+  const startedAt = start ? new Date(start) : null
+
+  if (!startedAt || Number.isNaN(startedAt.getTime())) {
+    return '00:00'
+  }
+
+  const totalSeconds = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  if (hours) {
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  }
+
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
 export default function MobileDialer({ token }) {
   const [auth, setAuth] = useState({ staffId: '', password: '' })
   const storageKey = `calltrack_dialer_${token}`
@@ -25,12 +44,14 @@ export default function MobileDialer({ token }) {
   const [nextCountdown, setNextCountdown] = useState(0)
   const [uploadingRecording, setUploadingRecording] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
+  const [callDuration, setCallDuration] = useState('00:00')
   const [recordingUrl, setRecordingUrl] = useState('')
   const [message, setMessage] = useState('')
   const [staffMessages, setStaffMessages] = useState([])
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [error, setError] = useState('')
   const nextTimerRef = useRef(null)
+  const durationTimerRef = useRef(null)
   const recorderRef = useRef(null)
   const recordingChunksRef = useRef([])
   const recordingCallRef = useRef(null)
@@ -41,6 +62,7 @@ export default function MobileDialer({ token }) {
   useEffect(() => {
     return () => {
       clearTimeout(nextTimerRef.current)
+      clearInterval(durationTimerRef.current)
       stopAutoRecording()
     }
   }, [])
@@ -63,6 +85,44 @@ export default function MobileDialer({ token }) {
   function bestRecordingMimeType() {
     const candidates = ['audio/mpeg', 'audio/mp4', 'audio/webm;codecs=opus', 'audio/webm']
     return candidates.find((type) => window.MediaRecorder?.isTypeSupported?.(type)) || ''
+  }
+
+  function stopDurationTimer() {
+    clearInterval(durationTimerRef.current)
+    durationTimerRef.current = null
+    setCallDuration('00:00')
+  }
+
+  function startDurationTimer(connectedAt) {
+    clearInterval(durationTimerRef.current)
+
+    if (!connectedAt) {
+      setCallDuration('00:00')
+      return
+    }
+
+    setCallDuration(formatElapsedTime(connectedAt))
+    durationTimerRef.current = setInterval(() => {
+      setCallDuration(formatElapsedTime(connectedAt))
+    }, 1000)
+  }
+
+  function setActiveCall(call) {
+    setCurrentCall(call)
+
+    if (call?.connectedAt && call.stage !== 'Completed') {
+      startDurationTimer(call.connectedAt)
+      return
+    }
+
+    if (call?.duration && call.duration !== '00:00') {
+      clearInterval(durationTimerRef.current)
+      durationTimerRef.current = null
+      setCallDuration(call.duration)
+      return
+    }
+
+    stopDurationTimer()
   }
 
   async function uploadRecordedBlob(blob, callId, mimeType) {
@@ -170,7 +230,7 @@ export default function MobileDialer({ token }) {
 
     const response = await connectDialerCall(token, call.id)
     setSession(response.session)
-    setCurrentCall(response.call)
+    setActiveCall(response.call)
     await startAutoRecording(response.call)
 
     if (openDialer && response.call?.phone) {
@@ -182,13 +242,13 @@ export default function MobileDialer({ token }) {
     const response = await getNextDialerCall(token)
     setSession(response.session)
     if (!response.call) {
-      setCurrentCall(null)
+      setActiveCall(null)
       setNextCountdown(0)
       setMessage(response.message || 'Queue mein abhi koi customer call available nahi hai.')
       return
     }
 
-    setCurrentCall(response.call)
+    setActiveCall(response.call)
     setTagForm({ sentiment: 'Interested' })
     setRecordingUrl('')
     setNextCountdown(0)
@@ -233,7 +293,7 @@ export default function MobileDialer({ token }) {
       setError('')
       const updated = await updateDialerStatus(token, 'not_ready')
       setSession(updated)
-      setCurrentCall(null)
+      setActiveCall(null)
       setNextCountdown(0)
       clearTimeout(nextTimerRef.current)
       stopAutoRecording()
@@ -249,7 +309,7 @@ export default function MobileDialer({ token }) {
       setError('')
       const response = await createDialerOutcall(token, outcall)
       setSession(response.session)
-      setCurrentCall(response.call)
+      setActiveCall(response.call)
       setTagForm({ sentiment: 'Interested' })
       setRecordingUrl('')
       await connectRecordAndOpenDialer(response.call)
@@ -280,7 +340,7 @@ export default function MobileDialer({ token }) {
       await stopAutoRecording({ waitForUpload: true })
       const response = await completeDialerCall(token, currentCall.id, tagForm)
       setSession(response.session)
-      setCurrentCall(response.call)
+      setActiveCall(response.call)
       setMessage('Call tag save ho gaya. Next call 5 seconds mein start hogi; stop karne ke liye Not Ready tap karo.')
 
       let seconds = response.nextDelaySeconds || 5
@@ -312,7 +372,7 @@ export default function MobileDialer({ token }) {
     localStorage.removeItem(storageKey)
     setStaff(null)
     setSession(null)
-    setCurrentCall(null)
+    setActiveCall(null)
     setNextCountdown(0)
     stopAutoRecording()
     setMessage('Dialer logout ho gaya.')
@@ -431,6 +491,10 @@ export default function MobileDialer({ token }) {
               <section className="min-w-0 rounded-lg border border-teal-300/30 bg-teal-300/10 p-4">
                 <p className="text-sm text-teal-100">Current Call</p>
                 <h3 className="mt-1 break-words text-lg font-bold">{currentCall.customer}</h3>
+                <div className="mt-3 rounded-lg border border-white/20 bg-white/10 px-3 py-3 text-center">
+                  <p className="text-xs font-bold uppercase text-teal-100">Call Duration</p>
+                  <p className="mt-1 font-mono text-3xl font-bold text-white">{callDuration}</p>
+                </div>
                 <button type="button" onClick={() => connectRecordAndOpenDialer(currentCall).catch((err) => setError(err.message || 'Call could not be opened.'))} className="mt-3 flex min-h-11 w-full min-w-0 items-center justify-center gap-2 rounded-lg bg-teal-500 px-3 py-2 text-center font-bold text-white">
                   <Phone size={18} />
                   <span className="break-all">Call & Recording Start {currentCall.phone}</span>
