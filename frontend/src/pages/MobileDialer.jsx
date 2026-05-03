@@ -4,6 +4,7 @@ import ChatThread from '../components/ChatThread'
 import { authorizeDialer, completeDialerCall, connectDialerCall, createDialerOutcall, getDialerMessages, getNextDialerCall, replyDialerMessage, updateDialerStatus, uploadDialerRecording } from '../controllers/dialerController'
 
 const callTags = ['Interested', 'Hot Lead', 'Not Interested', 'No Response', 'Call Disconnected', 'Callback', 'Call Handling']
+const nativeCallRecordingNote = 'Mobile browser direct phone-call conversation audio capture nahi kar sakta. Customer voice record karni ho to call Speaker ON par rakho; earpiece/Bluetooth par customer voice record nahi hogi.'
 
 export default function MobileDialer({ token }) {
   const [auth, setAuth] = useState({ staffId: '', password: '' })
@@ -74,19 +75,25 @@ export default function MobileDialer({ token }) {
     setUploadingRecording(true)
     const response = await uploadDialerRecording(token, callId, file)
     setRecordingUrl(response.recordingUrl)
-    setMessage(`Recording uploaded${extension === 'mp3' ? ' as MP3' : ''}.`)
+    setMessage('Recording upload ho gayi. Playback admin panel mein milega.')
     setUploadingRecording(false)
   }
 
   async function startAutoRecording(call) {
     try {
       if (!call || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-        setMessage('Call opened. Automatic recording is not supported on this device/browser.')
+        setMessage('Call open ho gaya, lekin is device/browser par automatic recording support nahi hai.')
         return
       }
 
       stopAutoRecording()
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: true,
+        },
+      })
       const mimeType = bestRecordingMimeType()
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
 
@@ -121,11 +128,11 @@ export default function MobileDialer({ token }) {
           })
       }
 
-      recorder.start()
+      recorder.start(1000)
       setIsRecording(true)
-      setMessage('Recording started.')
+      setMessage(`Recording start ho gayi. ${nativeCallRecordingNote}`)
     } catch {
-      setMessage('Microphone permission is required for recording.')
+      setMessage('Recording ke liye microphone permission required hai.')
     }
   }
 
@@ -177,7 +184,7 @@ export default function MobileDialer({ token }) {
     if (!response.call) {
       setCurrentCall(null)
       setNextCountdown(0)
-      setMessage(response.message || 'No customer calls are available in the queue.')
+      setMessage(response.message || 'Queue mein abhi koi customer call available nahi hai.')
       return
     }
 
@@ -203,7 +210,7 @@ export default function MobileDialer({ token }) {
       const readySession = await updateDialerStatus(token, 'ready')
       setSession(readySession)
 
-      setMessage('Authorized. Auto-ready is on. Assigning the next call...')
+      setMessage('Authorized. Auto-ready ON hai. Next call assign ho rahi hai...')
       await fetchNextCall()
     } catch (err) {
       setError(err.message || 'Authorization failed.')
@@ -230,7 +237,7 @@ export default function MobileDialer({ token }) {
       setNextCountdown(0)
       clearTimeout(nextTimerRef.current)
       stopAutoRecording()
-      setMessage('Not Ready. No new calls will be assigned.')
+      setMessage('Not Ready. Ab new calls assign nahi hongi.')
     } catch (err) {
       setError(err.message || 'Status update failed.')
     }
@@ -247,7 +254,7 @@ export default function MobileDialer({ token }) {
       setRecordingUrl('')
       await connectRecordAndOpenDialer(response.call)
     } catch (err) {
-      setError(err.message || 'Outcall could not be started.')
+      setError(err.message || 'Outcall start nahi ho paya.')
     }
   }
 
@@ -260,7 +267,7 @@ export default function MobileDialer({ token }) {
       setError('')
       await connectRecordAndOpenDialer(currentCall, { openDialer: false })
     } catch (err) {
-      setError(err.message || 'Recording could not be started.')
+      setError(err.message || 'Recording start nahi ho payi.')
     }
   }
 
@@ -269,12 +276,12 @@ export default function MobileDialer({ token }) {
       event.preventDefault()
       setError('')
       clearTimeout(nextTimerRef.current)
-      setMessage(isRecording ? 'Call ended. Uploading recording...' : 'Call tag is saving...')
+      setMessage(isRecording ? 'Call end hua. Recording upload ho rahi hai...' : 'Call tag save ho raha hai...')
       await stopAutoRecording({ waitForUpload: true })
       const response = await completeDialerCall(token, currentCall.id, tagForm)
       setSession(response.session)
       setCurrentCall(response.call)
-      setMessage('Call tag saved. The next call will start in 5 seconds; tap Not Ready to stop.')
+      setMessage('Call tag save ho gaya. Next call 5 seconds mein start hogi; stop karne ke liye Not Ready tap karo.')
 
       let seconds = response.nextDelaySeconds || 5
       setNextCountdown(seconds)
@@ -308,7 +315,7 @@ export default function MobileDialer({ token }) {
     setCurrentCall(null)
     setNextCountdown(0)
     stopAutoRecording()
-    setMessage('Dialer logged out.')
+    setMessage('Dialer logout ho gaya.')
   }
 
   useEffect(() => {
@@ -326,7 +333,7 @@ export default function MobileDialer({ token }) {
   async function handleMessageReply(item, body) {
     await replyDialerMessage(token, item.id, body)
     await handleLoadMessages()
-    setMessage('Reply sent')
+    setMessage('Reply sent ho gaya')
   }
 
   return (
@@ -344,7 +351,7 @@ export default function MobileDialer({ token }) {
 
         {!isMobile ? (
           <div className="mb-4 rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-sm font-semibold text-amber-100">
-            This dialer is optimized for mobile. Desktop browsers may not open the phone call automatically.
+            Ye dialer mobile ke liye optimized hai. Desktop browser phone call automatic open nahi kar sakta.
           </div>
         ) : null}
 
@@ -426,7 +433,7 @@ export default function MobileDialer({ token }) {
                 <h3 className="mt-1 break-words text-lg font-bold">{currentCall.customer}</h3>
                 <button type="button" onClick={() => connectRecordAndOpenDialer(currentCall).catch((err) => setError(err.message || 'Call could not be opened.'))} className="mt-3 flex min-h-11 w-full min-w-0 items-center justify-center gap-2 rounded-lg bg-teal-500 px-3 py-2 text-center font-bold text-white">
                   <Phone size={18} />
-                  <span className="break-all">Call {currentCall.phone}</span>
+                  <span className="break-all">Call & Recording Start {currentCall.phone}</span>
                 </button>
                 <button
                   type="button"
@@ -435,7 +442,7 @@ export default function MobileDialer({ token }) {
                   className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-500 px-3 font-bold text-white disabled:opacity-60"
                 >
                   <Headphones size={18} />
-                  {isRecording ? 'Recording...' : 'Start Recording'}
+                  {isRecording ? 'Recording chal rahi hai...' : 'Start Recording'}
                 </button>
                 <form onSubmit={handleCallComplete} className="mt-4 space-y-3">
                   <select className="h-11 w-full rounded-lg border border-teal-200/30 bg-white px-3 text-slate-950 outline-none" value={tagForm.sentiment} onChange={(event) => setTagForm({ ...tagForm, sentiment: event.target.value })}>
@@ -447,12 +454,15 @@ export default function MobileDialer({ token }) {
                   </button>
                 </form>
                 <p className="mt-3 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-center text-sm font-bold text-white">
-                  {uploadingRecording ? 'Recording is uploading...' : isRecording ? 'Recording is active for this call.' : 'Recording starts automatically when the phone dialer opens.'}
+                  {uploadingRecording ? 'Recording upload ho rahi hai...' : isRecording ? 'Recording active hai. Customer voice ke liye Speaker ON rakho.' : 'Phone dialer open hote hi recording start hogi. Speaker ON rakho.'}
                 </p>
-                {recordingUrl ? <p className="mt-3 text-center text-xs font-bold text-teal-100">Recording saved. Playback is available only in admin panels.</p> : null}
+                <p className="mt-3 rounded-lg border border-amber-200/30 bg-amber-200/10 px-3 py-2 text-center text-xs font-bold text-amber-100">
+                  {nativeCallRecordingNote}
+                </p>
+                {recordingUrl ? <p className="mt-3 text-center text-xs font-bold text-teal-100">Recording saved. Playback admin panel mein available hai.</p> : null}
                 {nextCountdown > 0 ? (
                   <p className="mt-3 rounded-lg bg-white/10 px-3 py-2 text-center text-sm font-bold text-white">
-                    Next call in {nextCountdown}s. Tap Not Ready to stop the next call.
+                    Next call {nextCountdown}s mein. Stop karne ke liye Not Ready tap karo.
                   </p>
                 ) : null}
               </section>
