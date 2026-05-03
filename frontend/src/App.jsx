@@ -29,6 +29,8 @@ function App() {
   }, [auth, dialerMatch])
 
   function handleAuth(response) {
+    localStorage.setItem('calltrack_token', response.token)
+    localStorage.setItem('calltrack_user', JSON.stringify(response.user))
     setAuth(response)
   }
 
