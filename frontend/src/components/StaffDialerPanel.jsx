@@ -3,6 +3,7 @@ import { Copy, ExternalLink, Link, Send } from 'lucide-react'
 import ChatThread from './ChatThread'
 import { createDialerSession } from '../controllers/dialerController'
 import { getMyMessages, replyMessage } from '../controllers/messageController'
+import { APP_URL } from '../services/api'
 
 export default function StaffDialerPanel({ currentUser }) {
   const [dialerLink, setDialerLink] = useState('')
@@ -39,7 +40,7 @@ export default function StaffDialerPanel({ currentUser }) {
       setMessage('')
       setIsGenerating(true)
       const session = await createDialerSession()
-      const link = `${window.location.origin}/dialer/${session.token}`
+      const link = `${APP_URL}/dialer/${session.token}`
       setDialerLink(link)
       setMessage('Mobile dialer link is ready.')
     } catch (err) {

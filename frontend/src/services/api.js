@@ -1,6 +1,7 @@
 const defaultApiUrl = 'https://cromgen-callingcrm.onrender.com'
 
 export const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl
+export const APP_URL = API_URL.replace(/\/api\/?$/, '').replace(/\/+$/, '')
 
 export function apiUrl(path) {
   const base = API_URL.replace(/\/+$/, '')
