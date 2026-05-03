@@ -1,5 +1,8 @@
 const CustomerQueue = require('../models/CustomerQueue')
 
+const MAX_PHONE_RECORDS = 10
+const PHONE_LIMIT_MESSAGE = 'This phone number already exists in calling database'
+
 function normalizePhone(phone) {
   return String(phone || '').replace(/[^\d+]/g, '').trim()
 }
@@ -120,6 +123,12 @@ async function createCustomer(req, res, next) {
       return res.status(400).json({ message: 'customer name and phone are required' })
     }
 
+    const existingCount = await CustomerQueue.countDocuments({ phone: normalizedPhone })
+
+    if (existingCount >= MAX_PHONE_RECORDS) {
+      return res.status(409).json({ message: PHONE_LIMIT_MESSAGE })
+    }
+
     const customer = await CustomerQueue.create({
       name,
       phone: normalizedPhone,
@@ -130,7 +139,7 @@ async function createCustomer(req, res, next) {
     res.status(201).json(mapCustomer(customer))
   } catch (error) {
     if (error.code === 11000) {
-      return res.status(409).json({ message: 'This phone number already exists in calling database' })
+      return res.status(409).json({ message: PHONE_LIMIT_MESSAGE })
     }
 
     next(error)
@@ -153,21 +162,39 @@ async function bulkCreateCustomers(req, res, next) {
       return res.status(400).json({ message: 'Upload at least one valid customer as name,phone' })
     }
 
-    const result = await CustomerQueue.insertMany(docs, { ordered: false }).catch((error) => {
-      if (error.insertedDocs) {
-        return error.insertedDocs
-      }
+    const phoneCounts = new Map()
+    const distinctPhones = [...new Set(docs.map((customer) => customer.phone))]
+    const existingCounts = await CustomerQueue.aggregate([
+      { $match: { phone: { $in: distinctPhones } } },
+      { $group: { _id: '$phone', count: { $sum: 1 } } },
+    ])
 
-      throw error
+    existingCounts.forEach((item) => {
+      phoneCounts.set(item._id, item.count)
     })
 
-    const inserted = Array.isArray(result) ? result : []
+    for (const doc of docs) {
+      const nextCount = (phoneCounts.get(doc.phone) || 0) + 1
+
+      if (nextCount > MAX_PHONE_RECORDS) {
+        return res.status(409).json({ message: PHONE_LIMIT_MESSAGE })
+      }
+
+      phoneCounts.set(doc.phone, nextCount)
+    }
+
+    const inserted = await CustomerQueue.insertMany(docs, { ordered: true })
+
     res.status(201).json({
       inserted: inserted.length,
-      skipped: docs.length - inserted.length,
+      skipped: 0,
       customers: inserted.map(mapCustomer),
     })
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ message: PHONE_LIMIT_MESSAGE })
+    }
+
     next(error)
   }
 }

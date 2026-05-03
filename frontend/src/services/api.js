@@ -49,6 +49,7 @@ export const API_ENDPOINTS = {
     authorize: (token) => `/dialer/${token}/authorize`,
     nextCall: (token) => `/dialer/${token}/next-call`,
     outcall: (token) => `/dialer/${token}/outcall`,
+    connectCall: (token, callId) => `/dialer/${token}/calls/${callId}/connect`,
     completeCall: (token, callId) => `/dialer/${token}/calls/${callId}/complete`,
     recording: (token, callId) => `/dialer/${token}/calls/${callId}/recording`,
     messages: (token) => `/dialer/${token}/messages`,

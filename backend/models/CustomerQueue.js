@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 const customerQueueSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    phone: { type: String, required: true, trim: true, unique: true, index: true },
+    phone: { type: String, required: true, trim: true, index: true },
     status: {
       type: String,
       enum: ['pending', 'assigned', 'completed'],

@@ -41,6 +41,12 @@ export function completeDialerCall(token, callId, payload) {
   })
 }
 
+export function connectDialerCall(token, callId) {
+  return request(API_ENDPOINTS.dialer.connectCall(token, callId), {
+    method: 'POST',
+  })
+}
+
 export async function uploadDialerRecording(token, callId, file) {
   const formData = new FormData()
   formData.append('recording', file)

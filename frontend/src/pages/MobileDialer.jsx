@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CheckCircle2, Headphones, Lock, LogOut, Phone, PhoneCall, Power, UserCheck } from 'lucide-react'
 import ChatThread from '../components/ChatThread'
-import { authorizeDialer, completeDialerCall, createDialerOutcall, getDialerMessages, getNextDialerCall, replyDialerMessage, updateDialerStatus, uploadDialerRecording } from '../controllers/dialerController'
+import { authorizeDialer, completeDialerCall, connectDialerCall, createDialerOutcall, getDialerMessages, getNextDialerCall, replyDialerMessage, updateDialerStatus, uploadDialerRecording } from '../controllers/dialerController'
 
 const callTags = ['Interested', 'Hot Lead', 'Not Interested', 'No Response', 'Call Disconnected', 'Callback', 'Call Handling']
 
@@ -23,6 +23,7 @@ export default function MobileDialer({ token }) {
   const [showOutcallForm, setShowOutcallForm] = useState(false)
   const [nextCountdown, setNextCountdown] = useState(0)
   const [uploadingRecording, setUploadingRecording] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
   const [recordingUrl, setRecordingUrl] = useState('')
   const [message, setMessage] = useState('')
   const [staffMessages, setStaffMessages] = useState([])
@@ -80,7 +81,7 @@ export default function MobileDialer({ token }) {
     setUploadingRecording(true)
     const response = await uploadDialerRecording(token, callId, file)
     setRecordingUrl(response.recordingUrl)
-    setMessage(`Recording uploaded automatically${extension === 'mp3' ? ' as MP3' : ''}.`)
+    setMessage(`Recording uploaded${extension === 'mp3' ? ' as MP3' : ''}.`)
     setUploadingRecording(false)
   }
 
@@ -128,15 +129,17 @@ export default function MobileDialer({ token }) {
       }
 
       recorder.start()
-      setMessage('Recording started automatically.')
+      setIsRecording(true)
+      setMessage('Recording started.')
     } catch (err) {
-      setMessage('Call opened. Microphone permission is required for automatic recording.')
+      setMessage('Microphone permission is required for recording.')
     }
   }
 
   function stopAutoRecording({ waitForUpload = false } = {}) {
     const recorder = recorderRef.current
     recorderRef.current = null
+    setIsRecording(false)
 
     if (!recorder) {
       recordingStreamRef.current?.getTracks().forEach((track) => track.stop())
@@ -174,7 +177,6 @@ export default function MobileDialer({ token }) {
     setTagForm({ sentiment: 'Interested' })
     setRecordingUrl('')
     setNextCountdown(0)
-    await startAutoRecording(response.call)
     if (response.telUrl) {
       window.location.href = response.telUrl
     }
@@ -237,10 +239,25 @@ export default function MobileDialer({ token }) {
       setCurrentCall(response.call)
       setTagForm({ sentiment: 'Interested' })
       setRecordingUrl('')
-      await startAutoRecording(response.call)
       window.location.href = response.telUrl
     } catch (err) {
       setError(err.message || 'Outcall could not be started.')
+    }
+  }
+
+  async function handleStartRecording() {
+    try {
+      if (!currentCall || isRecording) {
+        return
+      }
+
+      setError('')
+      const response = await connectDialerCall(token, currentCall.id)
+      setSession(response.session)
+      setCurrentCall(response.call)
+      await startAutoRecording(response.call)
+    } catch (err) {
+      setError(err.message || 'Recording could not be started.')
     }
   }
 
@@ -249,7 +266,7 @@ export default function MobileDialer({ token }) {
       event.preventDefault()
       setError('')
       clearTimeout(nextTimerRef.current)
-      setMessage('Call ended. Uploading recording...')
+      setMessage(isRecording ? 'Call ended. Uploading recording...' : 'Call tag is saving...')
       await stopAutoRecording({ waitForUpload: true })
       const response = await completeDialerCall(token, currentCall.id, tagForm)
       setSession(response.session)
@@ -408,6 +425,15 @@ export default function MobileDialer({ token }) {
                   <Phone size={18} />
                   <span className="break-all">Call {currentCall.phone}</span>
                 </a>
+                <button
+                  type="button"
+                  onClick={handleStartRecording}
+                  disabled={isRecording || uploadingRecording}
+                  className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-500 px-3 font-bold text-white disabled:opacity-60"
+                >
+                  <Headphones size={18} />
+                  {isRecording ? 'Recording...' : 'Start Recording After Connect'}
+                </button>
                 <form onSubmit={handleCallComplete} className="mt-4 space-y-3">
                   <select className="h-11 w-full rounded-lg border border-teal-200/30 bg-white px-3 text-slate-950 outline-none" value={tagForm.sentiment} onChange={(event) => setTagForm({ ...tagForm, sentiment: event.target.value })}>
                     {callTags.map((tag) => <option key={tag}>{tag}</option>)}
@@ -418,13 +444,9 @@ export default function MobileDialer({ token }) {
                   </button>
                 </form>
                 <p className="mt-3 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-center text-sm font-bold text-white">
-                  {uploadingRecording ? 'Recording is uploading automatically...' : 'Recording uploads automatically after the call ends.'}
+                  {uploadingRecording ? 'Recording is uploading...' : 'Recording starts only after you tap Start Recording.'}
                 </p>
-                {recordingUrl ? (
-                  <audio className="mt-3 h-10 w-full" controls src={recordingUrl}>
-                    <a href={recordingUrl}>Recording</a>
-                  </audio>
-                ) : null}
+                {recordingUrl ? <p className="mt-3 text-center text-xs font-bold text-teal-100">Recording saved. Playback is available only in admin panels.</p> : null}
                 {nextCountdown > 0 ? (
                   <p className="mt-3 rounded-lg bg-white/10 px-3 py-2 text-center text-sm font-bold text-white">
                     Next call in {nextCountdown}s. Tap Not Ready to stop the next call.

@@ -250,7 +250,7 @@ async function completeCall(req, res, next) {
     await call.save()
 
     await CustomerQueue.findOneAndUpdate(
-      { phone: call.phone },
+      { assignedCallId: call.callId },
       {
         status: 'completed',
         assignedTo: session.staff._id,
@@ -264,6 +264,36 @@ async function completeCall(req, res, next) {
     await session.save()
 
     res.json({ session: mapSession(session), call: mapDialerCall(call), nextDelaySeconds: 5 })
+  } catch (error) {
+    next(error)
+  }
+}
+
+async function connectCall(req, res, next) {
+  try {
+    const session = await DialerSession.findOne({ token: req.params.token }).populate('staff')
+
+    if (!session || !session.authorizedAt) {
+      return res.status(401).json({ message: 'Dialer is not authorized.' })
+    }
+
+    const call = await Call.findOne({ callId: req.params.callId, agent: session.staff.name })
+
+    if (!call) {
+      return res.status(404).json({ message: 'call not found for this staff' })
+    }
+
+    if (call.stage === 'Completed') {
+      return res.status(409).json({ message: 'Completed calls cannot be recorded.' })
+    }
+
+    call.stage = 'On Call'
+    await call.save()
+
+    session.status = 'on_call'
+    await session.save()
+
+    res.json({ session: mapSession(session), call: mapDialerCall(call) })
   } catch (error) {
     next(error)
   }
@@ -285,6 +315,10 @@ async function uploadDialerRecording(req, res, next) {
 
     if (!call) {
       return res.status(404).json({ message: 'call not found for this staff' })
+    }
+
+    if (call.stage !== 'On Call') {
+      return res.status(409).json({ message: 'Recording can start only after the call is connected.' })
     }
 
     const uploadResult = await uploadAudioBuffer(req.file.buffer, req.file.originalname)
@@ -365,4 +399,4 @@ async function replyDialerMessage(req, res, next) {
   }
 }
 
-module.exports = { authorizeSession, completeCall, createOutcall, createSession, getDialerMessages, getNextCall, replyDialerMessage, updateStatus, uploadDialerRecording }
+module.exports = { authorizeSession, completeCall, connectCall, createOutcall, createSession, getDialerMessages, getNextCall, replyDialerMessage, updateStatus, uploadDialerRecording }
