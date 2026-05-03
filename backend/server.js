@@ -73,9 +73,11 @@ if (fs.existsSync(frontendIndexPath)) {
 }
 
 app.use((error, req, res, next) => {
-  const statusCode = error.statusCode || 500
+  const duplicateFields = error?.code === 11000 ? Object.keys(error.keyPattern || error.keyValue || {}) : []
+  const statusCode = error.statusCode || (duplicateFields.length ? 409 : 500)
+
   res.status(statusCode).json({
-    message: error.message || 'Something went wrong',
+    message: duplicateFields.length ? `${duplicateFields.join(', ')} already exists. Please try again.` : error.message || 'Something went wrong',
   })
 })
 

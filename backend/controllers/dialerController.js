@@ -5,6 +5,7 @@ const DialerSession = require('../models/DialerSession')
 const StaffMessage = require('../models/StaffMessage')
 const User = require('../models/User')
 const { uploadAudioBuffer } = require('../services/cloudinaryService')
+const { createCallWithUniqueId } = require('../utils/callId')
 
 function mapSession(session) {
   return {
@@ -166,9 +167,7 @@ async function getNextCall(req, res, next) {
       })
     }
 
-    const totalCalls = await Call.countDocuments()
-    const call = await Call.create({
-      callId: `CL-${2051 + totalCalls}`,
+    const call = await createCallWithUniqueId({
       customer: queuedCustomer.name,
       phone: queuedCustomer.phone,
       agent: session.staff.name,
@@ -202,9 +201,7 @@ async function createOutcall(req, res, next) {
       return res.status(400).json({ message: 'phone is required' })
     }
 
-    const totalCalls = await Call.countDocuments()
-    const call = await Call.create({
-      callId: `CL-${2051 + totalCalls}`,
+    const call = await createCallWithUniqueId({
       customer,
       phone,
       agent: session.staff.name,

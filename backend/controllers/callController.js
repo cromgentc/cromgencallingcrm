@@ -2,6 +2,7 @@ const Call = require('../models/Call')
 const CustomerQueue = require('../models/CustomerQueue')
 const User = require('../models/User')
 const { uploadAudioBuffer } = require('../services/cloudinaryService')
+const { createCallWithUniqueId } = require('../utils/callId')
 
 const TAGS = ['Interested', 'Hot Lead', 'Not Interested', 'No Response', 'Call Disconnected', 'Callback', 'Call Handling', 'Neutral']
 
@@ -61,15 +62,13 @@ async function createCall(req, res, next) {
       return res.status(400).json({ message: 'customer, phone, and agent are required' })
     }
 
-    const totalCalls = await Call.countDocuments()
     const queuedCustomer = await CustomerQueue.findOne({ phone })
 
     if (queuedCustomer?.status === 'completed') {
       return res.status(409).json({ message: 'This customer number already completed calling' })
     }
 
-    const call = await Call.create({
-      callId: `CL-${2051 + totalCalls}`,
+    const call = await createCallWithUniqueId({
       customer,
       phone,
       agent,

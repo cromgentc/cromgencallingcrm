@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken')
 const User = require('../models/User')
-const { generateStaffId } = require('../utils/staffId')
+const { createUserWithUniqueStaffId } = require('../utils/staffId')
 
 function signToken(user) {
   return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'dev-secret-change-me', {
@@ -148,19 +148,18 @@ async function registerAccount(req, res, next) {
       managerId = teamLeader.assignedManager || assignedManager || undefined
     }
 
-    const staffId = role === 'staff' ? await generateStaffId() : undefined
-    const user = await User.create({
+    const userPayload = {
       name,
       email: normalizedEmail,
       password,
       role,
-      staffId,
       phone,
       team,
       assignedManager: managerId || undefined,
       assignedTeamLeader: teamLeaderId || undefined,
       createdBy: req.user._id,
-    })
+    }
+    const user = role === 'staff' ? await createUserWithUniqueStaffId(userPayload) : await User.create(userPayload)
 
     res.status(201).json(sanitizeUser(user))
   } catch (error) {

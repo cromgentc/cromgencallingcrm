@@ -38,14 +38,7 @@ export default function MobileDialer({ token }) {
   const isMobile = useMemo(() => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), [])
 
   useEffect(() => {
-    function handlePageHide() {
-      stopAutoRecording()
-    }
-
-    window.addEventListener('pagehide', handlePageHide)
-
     return () => {
-      window.removeEventListener('pagehide', handlePageHide)
       clearTimeout(nextTimerRef.current)
       stopAutoRecording()
     }
@@ -131,7 +124,7 @@ export default function MobileDialer({ token }) {
       recorder.start()
       setIsRecording(true)
       setMessage('Recording started.')
-    } catch (err) {
+    } catch {
       setMessage('Microphone permission is required for recording.')
     }
   }
@@ -163,6 +156,21 @@ export default function MobileDialer({ token }) {
     return waitForUpload ? stopped : Promise.resolve()
   }
 
+  async function connectRecordAndOpenDialer(call, { openDialer = true } = {}) {
+    if (!call?.id) {
+      return
+    }
+
+    const response = await connectDialerCall(token, call.id)
+    setSession(response.session)
+    setCurrentCall(response.call)
+    await startAutoRecording(response.call)
+
+    if (openDialer && response.call?.phone) {
+      window.location.href = `tel:${response.call.phone}`
+    }
+  }
+
   async function fetchNextCall() {
     const response = await getNextDialerCall(token)
     setSession(response.session)
@@ -177,9 +185,7 @@ export default function MobileDialer({ token }) {
     setTagForm({ sentiment: 'Interested' })
     setRecordingUrl('')
     setNextCountdown(0)
-    if (response.telUrl) {
-      window.location.href = response.telUrl
-    }
+    await connectRecordAndOpenDialer(response.call)
   }
 
   async function handleAuthorize(event) {
@@ -239,7 +245,7 @@ export default function MobileDialer({ token }) {
       setCurrentCall(response.call)
       setTagForm({ sentiment: 'Interested' })
       setRecordingUrl('')
-      window.location.href = response.telUrl
+      await connectRecordAndOpenDialer(response.call)
     } catch (err) {
       setError(err.message || 'Outcall could not be started.')
     }
@@ -252,10 +258,7 @@ export default function MobileDialer({ token }) {
       }
 
       setError('')
-      const response = await connectDialerCall(token, currentCall.id)
-      setSession(response.session)
-      setCurrentCall(response.call)
-      await startAutoRecording(response.call)
+      await connectRecordAndOpenDialer(currentCall, { openDialer: false })
     } catch (err) {
       setError(err.message || 'Recording could not be started.')
     }
@@ -421,10 +424,10 @@ export default function MobileDialer({ token }) {
               <section className="min-w-0 rounded-lg border border-teal-300/30 bg-teal-300/10 p-4">
                 <p className="text-sm text-teal-100">Current Call</p>
                 <h3 className="mt-1 break-words text-lg font-bold">{currentCall.customer}</h3>
-                <a href={`tel:${currentCall.phone}`} className="mt-3 flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-lg bg-teal-500 px-3 py-2 text-center font-bold text-white">
+                <button type="button" onClick={() => connectRecordAndOpenDialer(currentCall).catch((err) => setError(err.message || 'Call could not be opened.'))} className="mt-3 flex min-h-11 w-full min-w-0 items-center justify-center gap-2 rounded-lg bg-teal-500 px-3 py-2 text-center font-bold text-white">
                   <Phone size={18} />
                   <span className="break-all">Call {currentCall.phone}</span>
-                </a>
+                </button>
                 <button
                   type="button"
                   onClick={handleStartRecording}
@@ -432,7 +435,7 @@ export default function MobileDialer({ token }) {
                   className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-500 px-3 font-bold text-white disabled:opacity-60"
                 >
                   <Headphones size={18} />
-                  {isRecording ? 'Recording...' : 'Start Recording After Connect'}
+                  {isRecording ? 'Recording...' : 'Start Recording'}
                 </button>
                 <form onSubmit={handleCallComplete} className="mt-4 space-y-3">
                   <select className="h-11 w-full rounded-lg border border-teal-200/30 bg-white px-3 text-slate-950 outline-none" value={tagForm.sentiment} onChange={(event) => setTagForm({ ...tagForm, sentiment: event.target.value })}>
@@ -444,7 +447,7 @@ export default function MobileDialer({ token }) {
                   </button>
                 </form>
                 <p className="mt-3 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-center text-sm font-bold text-white">
-                  {uploadingRecording ? 'Recording is uploading...' : 'Recording starts only after you tap Start Recording.'}
+                  {uploadingRecording ? 'Recording is uploading...' : isRecording ? 'Recording is active for this call.' : 'Recording starts automatically when the phone dialer opens.'}
                 </p>
                 {recordingUrl ? <p className="mt-3 text-center text-xs font-bold text-teal-100">Recording saved. Playback is available only in admin panels.</p> : null}
                 {nextCountdown > 0 ? (
