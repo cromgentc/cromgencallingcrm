@@ -46,6 +46,7 @@ export default function CallTable({
   const [selectedCallIds, setSelectedCallIds] = useState([])
 
   const isAdmin = currentUser?.role === 'admin'
+  const canViewActiveTaggings = !['admin', 'manager'].includes(currentUser?.role)
   const canPlayRecording = ['admin', 'manager', 'teamleader'].includes(currentUser?.role)
   const activeCalls = useMemo(() => calls.filter((call) => !isSavedCall(call)), [calls])
   const savedCalls = useMemo(() => calls.filter(isSavedCall), [calls])
@@ -126,67 +127,69 @@ export default function CallTable({
         </div>
       ) : null}
 
-      <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-4 py-3">
-          <h2 className="font-bold text-slate-950">Active Taggings</h2>
-          <p className="text-sm font-semibold text-slate-500">Only allocated live/end-call records appear here until they are saved.</p>
-        </div>
+      {canViewActiveTaggings ? (
+        <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 px-4 py-3">
+            <h2 className="font-bold text-slate-950">Active Taggings</h2>
+            <p className="text-sm font-semibold text-slate-500">Only allocated live/end-call records appear here until they are saved.</p>
+          </div>
 
-        <div className="divide-y divide-slate-100">
-          {activeCalls.map((call) => (
-            <article key={call.id} className="min-w-0 p-4">
-              <div className="grid min-w-0 gap-3 lg:grid-cols-[1fr_0.8fr_0.7fr_1fr] lg:items-center">
-                <div>
-                  <p className="font-bold text-slate-950">{call.customer}</p>
-                  <p className="text-sm text-slate-500">{call.phone}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">{call.duration || '00:00'}</p>
-                  <p className="text-xs text-slate-500">{call.id}</p>
-                </div>
-                <div>
-                  <span className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-700">
-                    {statusLabel(call)}
-                  </span>
-                </div>
-                {enableTagging ? (
-                  <div className="grid min-w-0 gap-2 sm:grid-cols-[1fr_auto]">
-                    <select
-                      className="h-10 min-w-0 rounded-lg border border-slate-200 px-2 text-sm outline-none focus:border-teal-500"
-                      value={drafts[call.id]?.sentiment || call.sentiment || 'Interested'}
-                      onChange={(event) => updateDraft(call.id, { sentiment: event.target.value })}
-                    >
-                      {tags.map((tag) => (
-                        <option key={tag}>{tag}</option>
-                      ))}
-                    </select>
-                    <button type="button" onClick={() => handleTagSave(call)} className="flex h-10 items-center justify-center gap-1 rounded-lg bg-slate-950 px-3 text-sm font-bold text-white">
-                      <CheckCircle2 size={16} />
-                      Save
-                    </button>
+          <div className="divide-y divide-slate-100">
+            {activeCalls.map((call) => (
+              <article key={call.id} className="min-w-0 p-4">
+                <div className="grid min-w-0 gap-3 lg:grid-cols-[1fr_0.8fr_0.7fr_1fr] lg:items-center">
+                  <div>
+                    <p className="font-bold text-slate-950">{call.customer}</p>
+                    <p className="text-sm text-slate-500">{call.phone}</p>
                   </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{call.duration || '00:00'}</p>
+                    <p className="text-xs text-slate-500">{call.id}</p>
+                  </div>
+                  <div>
+                    <span className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-700">
+                      {statusLabel(call)}
+                    </span>
+                  </div>
+                  {enableTagging ? (
+                    <div className="grid min-w-0 gap-2 sm:grid-cols-[1fr_auto]">
+                      <select
+                        className="h-10 min-w-0 rounded-lg border border-slate-200 px-2 text-sm outline-none focus:border-teal-500"
+                        value={drafts[call.id]?.sentiment || call.sentiment || 'Interested'}
+                        onChange={(event) => updateDraft(call.id, { sentiment: event.target.value })}
+                      >
+                        {tags.map((tag) => (
+                          <option key={tag}>{tag}</option>
+                        ))}
+                      </select>
+                      <button type="button" onClick={() => handleTagSave(call)} className="flex h-10 items-center justify-center gap-1 rounded-lg bg-slate-950 px-3 text-sm font-bold text-white">
+                        <CheckCircle2 size={16} />
+                        Save
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+
+                {enableTagging ? (
+                  <label className="mt-4 block">
+                    <span className="text-xs font-bold uppercase text-slate-400">Remark</span>
+                    <textarea
+                      className="mt-1 min-h-20 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold leading-6 text-slate-800 outline-none focus:border-teal-500"
+                      placeholder="Remark"
+                      value={drafts[call.id]?.remark || call.remark || ''}
+                      onChange={(event) => updateDraft(call.id, { remark: event.target.value })}
+                    />
+                  </label>
                 ) : null}
-              </div>
+              </article>
+            ))}
 
-              {enableTagging ? (
-                <label className="mt-4 block">
-                  <span className="text-xs font-bold uppercase text-slate-400">Remark</span>
-                  <textarea
-                    className="mt-1 min-h-20 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold leading-6 text-slate-800 outline-none focus:border-teal-500"
-                    placeholder="Remark"
-                    value={drafts[call.id]?.remark || call.remark || ''}
-                    onChange={(event) => updateDraft(call.id, { remark: event.target.value })}
-                  />
-                </label>
-              ) : null}
-            </article>
-          ))}
-
-          {!activeCalls.length ? (
-            <EmptyState title="No active taggings" description="Allocated live/end-call records will appear here until they are saved." />
-          ) : null}
-        </div>
-      </section>
+            {!activeCalls.length ? (
+              <EmptyState title="No active taggings" description="Allocated live/end-call records will appear here until they are saved." />
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">

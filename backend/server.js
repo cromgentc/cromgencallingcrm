@@ -2,6 +2,8 @@ require('dotenv').config()
 
 const express = require('express')
 const cors = require('cors')
+const fs = require('fs')
+const path = require('path')
 const { connectDB } = require('./config/db')
 const callRoutes = require('./routes/callRoutes')
 const clientRoutes = require('./routes/clientRoutes')
@@ -20,6 +22,8 @@ const whatsappRoutes = require('./routes/whatsappRoutes')
 
 const app = express()
 const PORT = process.env.PORT || 5000
+const frontendDistPath = path.resolve(__dirname, '../frontend/dist')
+const frontendIndexPath = path.join(frontendDistPath, 'index.html')
 
 app.use(cors())
 app.use(express.json())
@@ -46,6 +50,21 @@ app.use('/api/reports', reportRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/staff', staffRoutes)
 app.use('/api/settings', settingRoutes)
+
+if (fs.existsSync(frontendIndexPath)) {
+  app.use(express.static(frontendDistPath))
+  app.get(/^(?!\/api).*/, (req, res) => {
+    res.sendFile(frontendIndexPath)
+  })
+} else {
+  app.get('/', (req, res) => {
+    res.json({
+      status: 'ok',
+      service: 'calltrack-api',
+      message: 'Frontend build not found. Run npm run build before serving the app.',
+    })
+  })
+}
 
 app.use((error, req, res, next) => {
   const statusCode = error.statusCode || 500

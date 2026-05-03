@@ -1,4 +1,6 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/'
+const defaultApiUrl = import.meta.env.DEV ? 'http://localhost:5000/' : window.location.origin
+
+export const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl
 
 export function apiUrl(path) {
   const base = API_URL.replace(/\/+$/, '')
