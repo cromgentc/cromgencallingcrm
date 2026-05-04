@@ -1,0 +1,24 @@
+; Copy into /etc/asterisk/extensions.conf
+
+[globals]
+OUTBOUND_TRUNK=PJSIP/edesy-trunk
+RECORDING_DIR=/var/spool/asterisk/monitor/crm
+
+[from-agent]
+exten => _X!,1,NoOp(Agent outbound direct dial to ${EXTEN})
+ same => n,Dial(${OUTBOUND_TRUNK}/${EXTEN},60)
+ same => n,Hangup()
+
+[from-edesy]
+exten => _X!,1,NoOp(Inbound call from Edesy to ${EXTEN})
+ same => n,Hangup()
+
+[crm-outbound]
+exten => _X!,1,NoOp(CRM click-to-call: ${CRM_CALL_ID} ${CRM_CUSTOMER})
+ same => n,Set(SAFE_CALL_ID=${FILTER(0-9A-Za-z_-,${CRM_CALL_ID})})
+ same => n,Set(RECORD_FILE=${RECORDING_DIR}/${STRFTIME(${EPOCH},,%Y%m%d-%H%M%S)}-${SAFE_CALL_ID}.wav)
+ same => n,GotoIf($["${CRM_RECORD}"="1"]?record:call)
+ same => n(record),MixMonitor(${RECORD_FILE},b)
+ same => n(call),Dial(${OUTBOUND_TRUNK}/${EXTEN},60,g)
+ same => n,ExecIf($["${CRM_RECORD}"="1"]?StopMixMonitor())
+ same => n,Hangup()

@@ -14,11 +14,14 @@ const dialerRoutes = require('./routes/dialerRoutes')
 const authRoutes = require('./routes/authRoutes')
 const leadRoutes = require('./routes/leadRoutes')
 const messageRoutes = require('./routes/messageRoutes')
+const marketingRoutes = require('./routes/marketingRoutes')
 const reportRoutes = require('./routes/reportRoutes')
 const staffRoutes = require('./routes/staffRoutes')
 const settingRoutes = require('./routes/settingRoutes')
 const googleRoutes = require('./routes/googleRoutes')
 const whatsappRoutes = require('./routes/whatsappRoutes')
+const pbxRoutes = require('./routes/pbxRoutes')
+const { startEmailScheduler } = require('./services/emailSchedulerService')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -48,7 +51,9 @@ app.use('/api/agents', agentRoutes)
 app.use('/api/calls', callRoutes)
 app.use('/api/leads', leadRoutes)
 app.use('/api/messages', messageRoutes)
+app.use('/api/marketing', marketingRoutes)
 app.use('/api/reports', reportRoutes)
+app.use('/api/pbx', pbxRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/staff', staffRoutes)
 app.use('/api/settings', settingRoutes)
@@ -75,6 +80,9 @@ if (fs.existsSync(frontendIndexPath)) {
 app.use((error, req, res, next) => {
   const duplicateFields = error?.code === 11000 ? Object.keys(error.keyPattern || error.keyValue || {}) : []
   const statusCode = error.statusCode || (duplicateFields.length ? 409 : 500)
+  if (statusCode >= 500) {
+    console.error(`${req.method} ${req.originalUrl} failed:`, error.message)
+  }
 
   res.status(statusCode).json({
     message: duplicateFields.length ? `${duplicateFields.join(', ')} already exists. Please try again.` : error.message || 'Something went wrong',
@@ -83,6 +91,7 @@ app.use((error, req, res, next) => {
 
 connectDB()
   .then(() => {
+    startEmailScheduler()
     app.listen(PORT, () => {
       console.log(`CallTrack API running on http://localhost:${PORT}`)
     })

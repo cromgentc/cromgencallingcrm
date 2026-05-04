@@ -1,0 +1,5 @@
+; Copy into /etc/asterisk/rtp.conf
+
+[general]
+rtpstart=10000
+rtpend=20000

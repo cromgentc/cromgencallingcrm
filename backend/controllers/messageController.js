@@ -28,22 +28,34 @@ async function getMyMessages(req, res, next) {
 
 async function createMessage(req, res, next) {
   try {
-    const { staffId, body } = req.body || {}
+    const { staffId, email, userId, to, body } = req.body || {}
+    const login = String(to || staffId || email || userId || '').trim()
 
-    if (!staffId || !body) {
-      return res.status(400).json({ message: 'staffId and message are required' })
+    if (!login || !body) {
+      return res.status(400).json({ message: 'recipient login/email/staffId and message are required' })
     }
 
-    const staff = await User.findOne({ staffId: staffId.toUpperCase(), role: 'staff' }).lean()
+    const recipient = await User.findOne({
+      $or: [
+        { _id: /^[a-f\d]{24}$/i.test(login) ? login : undefined },
+        { staffId: login.toUpperCase() },
+        { email: login.toLowerCase() },
+      ].filter((item) => Object.values(item)[0]),
+      isActive: true,
+    }).lean()
 
-    if (!staff) {
-      return res.status(404).json({ message: 'calling staff not found' })
+    if (!recipient) {
+      return res.status(404).json({ message: 'recipient not found' })
+    }
+
+    if (String(recipient._id) === String(req.user._id)) {
+      return res.status(400).json({ message: 'You cannot send message to yourself' })
     }
 
     const message = await StaffMessage.create({
       from: req.user._id,
       fromName: req.user.name,
-      to: staff._id,
+      to: recipient._id,
       body,
     })
 

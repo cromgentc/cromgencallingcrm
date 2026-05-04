@@ -1,4 +1,4 @@
-import { BarChart3, Boxes, BriefcaseBusiness, CalendarClock, Database, Headphones, LayoutDashboard, PhoneCall, Settings, Users } from 'lucide-react'
+import { BarChart3, Boxes, BriefcaseBusiness, CalendarClock, Database, Headphones, LayoutDashboard, Megaphone, PhoneCall, Settings, Users } from 'lucide-react'
 
 export const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -35,6 +35,15 @@ export const navigationItems = [
       { id: 'sales-forecasts', label: 'Forecasts' },
       { id: 'sales-documents', label: 'Documents' },
       { id: 'sales-campaigns', label: 'Campaigns' },
+    ],
+  },
+  {
+    id: 'marketing-menu',
+    label: 'Marketing',
+    icon: Megaphone,
+    children: [
+      { id: 'marketing-email', label: 'Email Marketing', externalPath: '/marketing/email' },
+      { id: 'marketing-sms', label: 'SMS Marketing' },
     ],
   },
   {
@@ -99,6 +108,15 @@ export function getNavigationItemsForUser(user) {
           { id: 'sales-contacts', label: 'Contacts' },
           { id: 'sales-accounts', label: 'Accounts' },
           { id: 'sales-deals', label: 'Deals' },
+        ],
+      },
+      {
+        id: 'marketing-menu',
+        label: 'Marketing',
+        icon: Megaphone,
+        children: [
+          { id: 'marketing-email', label: 'Email Marketing', externalPath: '/marketing/email' },
+          { id: 'marketing-sms', label: 'SMS Marketing' },
         ],
       },
       { id: 'reports', label: 'Reports', icon: BarChart3 },

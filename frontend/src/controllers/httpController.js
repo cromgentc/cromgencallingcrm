@@ -17,7 +17,7 @@ export async function request(path, options = {}) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Request failed' }))
-    throw new Error(error.message)
+    throw new Error(error.message || `Request failed (${response.status})`)
   }
 
   return response.json()

@@ -5,10 +5,12 @@ import ClientsView from '../components/ClientsView'
 import Database from '../components/Database'
 import GoogleCalendarView from '../components/GoogleCalendarView'
 import Header from '../components/Header'
+import EmailTrackingView from '../components/EmailTrackingView'
 import LeadsView from '../components/LeadsView'
 import LeadDetailPage from '../components/LeadDetailPage'
 import LiveCallStaff from '../components/LiveCallStaff'
 import LiveCallsView from '../components/LiveCallsView'
+import MarketingView from '../components/MarketingView'
 import MobileNav from '../components/MobileNav'
 import ModulePlaceholder from '../components/ModulePlaceholder'
 import PendingCallsView from '../components/PendingCallsView'
@@ -178,6 +180,14 @@ export default function Dashboard({ currentUser, onLogout, onUserUpdated }) {
 
     if (activeView.startsWith('sales-')) {
       return <SalesView view={activeView} calls={dashboard.calls} />
+    }
+
+    if (activeView === 'marketing-tracking') {
+      return <EmailTrackingView />
+    }
+
+    if (activeView.startsWith('marketing-')) {
+      return <MarketingView key={activeView} view={activeView} onNavigate={setActiveView} />
     }
 
     if (activeView.startsWith('activities-') || activeView.startsWith('inventory-')) {

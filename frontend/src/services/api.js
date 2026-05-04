@@ -1,4 +1,4 @@
-const defaultApiUrl = 'https://cromgen-callingcrm.onrender.com'
+const defaultApiUrl = import.meta.env.DEV ? 'http://localhost:5000/api' : '/api'
 
 export const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl
 export const APP_URL = API_URL.replace(/\/api\/?$/, '').replace(/\/+$/, '')
@@ -72,10 +72,21 @@ export const API_ENDPOINTS = {
     status: '/whatsapp/status',
   },
   reports: '/reports',
+  settings: {
+    smtp: '/settings/smtp',
+  },
   messages: {
     create: '/messages',
     mine: '/messages/mine',
     reply: (messageId) => `/messages/${messageId}/reply`,
+  },
+  marketing: {
+    sendEmail: '/marketing/email/send',
+    emailCampaigns: '/marketing/email/campaigns',
+    scheduleEmail: '/marketing/email/schedule',
+    syncInbox: '/marketing/email/sync-inbox',
+    tracking: '/marketing/email/tracking',
+    updateEmailCampaign: (campaignId) => `/marketing/email/campaigns/${campaignId}`,
   },
   staff: {
     list: '/staff',

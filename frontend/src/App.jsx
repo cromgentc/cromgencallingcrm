@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react'
 import AuthPage from './components/AuthPage'
+import EmailMarketingWorkspace from './components/EmailMarketingWorkspace'
+import SettingsView from './components/SettingsView'
 import Dashboard from './pages/Dashboard'
 import MobileDialer from './pages/MobileDialer'
 
 function App() {
   const dialerMatch = window.location.pathname.match(/^\/(?:dialer|dailer)\/([^/]+)/)
+  const emailMarketingPath = window.location.pathname === '/marketing/email'
+  const emailSettingsPath = window.location.pathname === '/marketing/email/settings'
   const [auth, setAuth] = useState(() => {
     const token = localStorage.getItem('calltrack_token')
     const user = localStorage.getItem('calltrack_user')
@@ -25,8 +29,13 @@ function App() {
       return
     }
 
+    if (emailMarketingPath || emailSettingsPath) {
+      document.title = `${emailSettingsPath ? 'Email Settings' : 'Email Marketing'} | CromGen CRM`
+      return
+    }
+
     document.title = auth ? 'Dashboard | CromGen CRM' : 'Login | CromGen CRM'
-  }, [auth, dialerMatch])
+  }, [auth, dialerMatch, emailMarketingPath, emailSettingsPath])
 
   function handleAuth(response) {
     localStorage.setItem('calltrack_token', response.token)
@@ -50,6 +59,14 @@ function App() {
 
   if (!auth) {
     return <AuthPage onAuth={handleAuth} />
+  }
+
+  if (emailMarketingPath) {
+    return <EmailMarketingWorkspace currentUser={auth.user} />
+  }
+
+  if (emailSettingsPath) {
+    return <SettingsView currentUser={auth.user} initialIntegration="emailSmtp" />
   }
 
   return <Dashboard currentUser={auth.user} onLogout={handleLogout} onUserUpdated={handleUserUpdated} />

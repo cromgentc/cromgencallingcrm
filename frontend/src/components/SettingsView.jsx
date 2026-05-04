@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { CalendarDays, Camera, CheckCircle2, ChevronDown, ExternalLink, LinkIcon, Network, Save, Server, Settings2, Users } from 'lucide-react'
-import { authHeaders } from '../controllers/httpController'
+import { useEffect, useState } from 'react'
+import { CalendarDays, Camera, CheckCircle2, ChevronDown, ExternalLink, LinkIcon, Mail, MessageSquare, Network, Save, Server, Settings2, Users } from 'lucide-react'
+import { authHeaders, request } from '../controllers/httpController'
 import { API_ENDPOINTS, apiUrl } from '../services/api'
 import { readUserJson, writeUserJson } from '../utils/userStorage'
 
@@ -22,6 +22,24 @@ const integrationDefaults = {
   linkedin: { clientId: '', clientSecret: '', redirectUrl: '' },
   instagram: { appId: '', appSecret: '', redirectUrl: '', accessToken: '' },
   facebook: { appId: '', appSecret: '', redirectUrl: '', pageAccessToken: '' },
+  emailSmtp: {
+    provider: 'SMTP',
+    host: '',
+    port: '587',
+    username: '',
+    password: '',
+    fromEmail: '',
+    fromName: 'CromGen CRM',
+    secure: 'false',
+  },
+  smsGateway: {
+    provider: 'MSG91',
+    apiUrl: '',
+    apiKey: '',
+    senderId: '',
+    route: 'transactional',
+    dltTemplateId: '',
+  },
 }
 
 const integrations = [
@@ -30,6 +48,8 @@ const integrations = [
   { id: 'linkedin', title: 'LinkedIn Connect', description: 'App credentials for LinkedIn lead source connection.', icon: Network },
   { id: 'instagram', title: 'Instagram Connect', description: 'Token details for Instagram enquiries and lead capture.', icon: Camera },
   { id: 'facebook', title: 'Facebook Connect', description: 'Page token for Facebook page leads sync.', icon: Users },
+  { id: 'emailSmtp', title: 'Email SMTP Gateway', description: 'SMTP/provider details for Email Marketing send API.', icon: Mail },
+  { id: 'smsGateway', title: 'SMS Gateway', description: 'SMS provider/API details for SMS Marketing send API.', icon: MessageSquare },
 ]
 
 function loadIntegrations() {
@@ -54,7 +74,17 @@ function fieldLabel(field) {
   if (field === 'cloudName') return 'CLOUD_NAME'
   if (field === 'apiKey') return 'API_KEY'
   if (field === 'apiSecret') return 'API_SECRET'
+  if (field === 'apiUrl') return 'API URL'
+  if (field === 'fromEmail') return 'From Email'
+  if (field === 'fromName') return 'From Name'
+  if (field === 'senderId') return 'Sender ID'
+  if (field === 'dltTemplateId') return 'DLT Template ID'
   return field.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase())
+}
+
+function savedOpenIntegration() {
+  const preferredSection = readUserJson('calltrack_settings_open', '')
+  return integrationDefaults[preferredSection] ? preferredSection : ''
 }
 
 function buildLoginUrl(section, config) {
@@ -153,8 +183,23 @@ export default function SettingsView({ initialIntegration = '' }) {
   const callbackState = callbackParams.get('state')
   const callbackSection = ['google', 'linkedin', 'facebook', 'instagram'].includes(callbackState) ? callbackState : callbackCode ? 'google' : ''
   const [configs, setConfigs] = useState(loadIntegrations)
-  const [openIntegration, setOpenIntegration] = useState(callbackSection || initialIntegration || 'google')
+  const [openIntegration, setOpenIntegration] = useState(callbackSection || initialIntegration || savedOpenIntegration() || 'google')
   const [integrationMessage, setIntegrationMessage] = useState('')
+
+  useEffect(() => {
+    request(API_ENDPOINTS.settings.smtp)
+      .then((smtp) => {
+        setConfigs((current) => ({
+          ...current,
+          emailSmtp: {
+            ...current.emailSmtp,
+            ...smtp,
+            password: current.emailSmtp.password,
+          },
+        }))
+      })
+      .catch(() => {})
+  }, [])
 
   function persist(nextConfigs, label) {
     writeUserJson('calltrack_integrations', nextConfigs)
@@ -172,12 +217,45 @@ export default function SettingsView({ initialIntegration = '' }) {
   }
 
   async function saveIntegration(section) {
+    if (section === 'emailSmtp') {
+      try {
+        setIntegrationMessage('Saving SMTP settings...')
+        const saved = await request(API_ENDPOINTS.settings.smtp, {
+          method: 'PUT',
+          body: JSON.stringify(configs.emailSmtp),
+        })
+        const nextConfigs = {
+          ...configs,
+          emailSmtp: {
+            ...configs.emailSmtp,
+            ...saved,
+            password: configs.emailSmtp.password,
+          },
+        }
+        setConfigs(nextConfigs)
+        persist(nextConfigs, saved.message || 'SMTP settings saved')
+      } catch (error) {
+        setIntegrationMessage(error.message || 'SMTP settings could not be saved')
+      }
+      return
+    }
+
     persist(configs, `${integrations.find((item) => item.id === section)?.title || 'API'} saved`)
   }
 
   async function saveAllIntegrations(event) {
     event.preventDefault()
-    persist(configs, 'All API settings saved')
+    try {
+      if (configs.emailSmtp?.host || configs.emailSmtp?.username || configs.emailSmtp?.password) {
+        await request(API_ENDPOINTS.settings.smtp, {
+          method: 'PUT',
+          body: JSON.stringify(configs.emailSmtp),
+        })
+      }
+      persist(configs, 'All API settings saved')
+    } catch (error) {
+      setIntegrationMessage(error.message || 'All settings could not be saved')
+    }
   }
 
   function handleSocialLogin(section) {
@@ -356,7 +434,7 @@ export default function SettingsView({ initialIntegration = '' }) {
                         <label key={field} className="block">
                           <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">{fieldLabel(field)}</span>
                           <input
-                            type={field.toLowerCase().includes('secret') || field.toLowerCase().includes('token') ? 'password' : 'text'}
+                            type={field.toLowerCase().includes('secret') || field.toLowerCase().includes('token') || field.toLowerCase().includes('key') || field.toLowerCase().includes('password') ? 'password' : 'text'}
                             className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-teal-500"
                             placeholder={fieldLabel(field)}
                             value={configs[integration.id][field]}

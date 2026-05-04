@@ -88,6 +88,7 @@ export default function Header({ dashboard, currentUser, onLogout, onViewChange 
       label: item.label,
       meta: 'Page',
       view: item.id,
+      externalPath: item.externalPath,
     }))
     const calls = (dashboard.calls || []).map((call) => ({
       label: call.customerName || call.customer || call.name || call.phone || call.mobile,
@@ -141,6 +142,13 @@ export default function Header({ dashboard, currentUser, onLogout, onViewChange 
   }, 0)
 
   function handleSearchSelect(item) {
+    if (item.externalPath) {
+      window.open(item.externalPath, '_blank', 'noopener,noreferrer')
+      setSearchQuery('')
+      setSearchOpen(false)
+      return
+    }
+
     onViewChange?.(item.view)
     setSearchQuery('')
     setSearchOpen(false)

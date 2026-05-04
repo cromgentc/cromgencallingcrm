@@ -9,7 +9,7 @@ export default function Sidebar({ activeView, currentUser, onViewChange, sidebar
   const activeParentId = useMemo(() => {
     const match = navigationItems.find((item) => item.children?.some((child) => child.id === activeView))
     return match?.id || null
-  }, [activeView])
+  }, [activeView, navigationItems])
 
   function toggleMenu(itemId) {
     setOpenMenuId((current) => (current === itemId ? null : itemId))
@@ -18,8 +18,15 @@ export default function Sidebar({ activeView, currentUser, onViewChange, sidebar
   function handleNavClick(item) {
     if (item.children?.length) {
       toggleMenu(item.id)
-      // Keep existing behavior: clicking parent goes to first child
-      onViewChange(item.children?.[0]?.id || item.id)
+      if (!item.children?.[0]?.externalPath) {
+        onViewChange(item.children?.[0]?.id || item.id)
+      }
+      onClose?.()
+      return
+    }
+
+    if (item.externalPath) {
+      window.open(item.externalPath, '_blank', 'noopener,noreferrer')
       onClose?.()
       return
     }
@@ -85,6 +92,11 @@ export default function Sidebar({ activeView, currentUser, onViewChange, sidebar
                           key={child.id}
                           type="button"
                           onClick={() => {
+                            if (child.externalPath) {
+                              window.open(child.externalPath, '_blank', 'noopener,noreferrer')
+                              onClose?.()
+                              return
+                            }
                             onViewChange(child.id)
                             onClose?.()
                           }}
