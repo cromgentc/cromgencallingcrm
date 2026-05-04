@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "functions": {
+    "api/[...path].js": {
+      "includeFiles": "../backend/**"
+    },
+    "api/auth/login.js": {
+      "includeFiles": "../backend/**"
+    },
+    "api/dashboard.js": {
+      "includeFiles": "../backend/**"
+    },
+    "api/health.js": {
+      "includeFiles": "../backend/**"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
