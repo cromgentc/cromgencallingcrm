@@ -6,7 +6,6 @@
   "scripts": {
     "build": "node scripts/buildFrontend.js",
     "dev": "node server.js",
-    "postinstall": "node scripts/buildFrontend.js",
     "seed:demo-accounts": "node scripts/registerDemoAccounts.js",
     "start": "node server.js"
   },
