@@ -1,97 +1,98 @@
-const defaultApiUrl = import.meta.env.DEV ? 'http://localhost:5000/api' : '/api'
+const defaultApiUrl = import.meta.env.DEV ? 'http://localhost:5000' : 'https://cromgen-callingcrm.vercel.app'
 
 export const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl
-export const APP_URL = API_URL.replace(/\/api\/?$/, '').replace(/\/+$/, '')
+export const APP_URL = API_URL.replace(/\/+$/, '')
 
 export function apiUrl(path) {
   const base = API_URL.replace(/\/+$/, '')
   const endpoint = String(path || '').startsWith('/') ? path : `/${path}`
-  const apiBase = base.endsWith('/api') ? base : `${base}/api`
-  return `${apiBase}${endpoint}`
+  return `${base}${endpoint}`
 }
+
+const API_PREFIX = '/api'
 
 export const API_ENDPOINTS = {
   auth: {
-    login: '/auth/login',
-    adminRegister: '/auth/admin/register',
-    register: '/auth/register',
-    me: '/auth/me',
+    login: `${API_PREFIX}/auth/login`,
+    adminRegister: `${API_PREFIX}/auth/admin/register`,
+    register: `${API_PREFIX}/auth/register`,
+    me: `${API_PREFIX}/auth/me`,
   },
   calls: {
-    list: '/calls',
-    create: '/calls',
-    delete: (callId) => `/calls/${callId}`,
-    bulkDelete: '/calls/bulk-delete',
-    update: (callId) => `/calls/${callId}`,
+    list: `${API_PREFIX}/calls`,
+    create: `${API_PREFIX}/calls`,
+    delete: (callId) => `${API_PREFIX}/calls/${callId}`,
+    bulkDelete: `${API_PREFIX}/calls/bulk-delete`,
+    update: (callId) => `${API_PREFIX}/calls/${callId}`,
   },
   customers: {
-    bulk: '/customers/bulk',
-    create: '/customers',
-    importUrl: '/customers/import-url',
-    list: '/customers',
+    bulk: `${API_PREFIX}/customers/bulk`,
+    create: `${API_PREFIX}/customers`,
+    importUrl: `${API_PREFIX}/customers/import-url`,
+    list: `${API_PREFIX}/customers`,
   },
   clients: {
-    list: '/clients',
-    create: '/clients',
-    update: (clientId) => `/clients/${clientId}`,
-    delete: (clientId) => `/clients/${clientId}`,
+    list: `${API_PREFIX}/clients`,
+    create: `${API_PREFIX}/clients`,
+    update: (clientId) => `${API_PREFIX}/clients/${clientId}`,
+    delete: (clientId) => `${API_PREFIX}/clients/${clientId}`,
   },
   agents: {
-    list: '/agents',
-    create: '/agents',
-    tracking: '/agents/tracking',
-    update: (agentId) => `/agents/${agentId}`,
+    list: `${API_PREFIX}/agents`,
+    create: `${API_PREFIX}/agents`,
+    tracking: `${API_PREFIX}/agents/tracking`,
+    update: (agentId) => `${API_PREFIX}/agents/${agentId}`,
   },
-  dashboard: '/dashboard',
+  dashboard: `${API_PREFIX}/dashboard`,
   dialer: {
-    authorize: (token) => `/dialer/${token}/authorize`,
-    nextCall: (token) => `/dialer/${token}/next-call`,
-    outcall: (token) => `/dialer/${token}/outcall`,
-    connectCall: (token, callId) => `/dialer/${token}/calls/${callId}/connect`,
-    completeCall: (token, callId) => `/dialer/${token}/calls/${callId}/complete`,
-    messages: (token) => `/dialer/${token}/messages`,
-    replyMessage: (token, messageId) => `/dialer/${token}/messages/${messageId}/reply`,
-    sessions: '/dialer/sessions',
-    status: (token) => `/dialer/${token}/status`,
+    authorize: (token) => `${API_PREFIX}/dialer/${token}/authorize`,
+    nextCall: (token) => `${API_PREFIX}/dialer/${token}/next-call`,
+    outcall: (token) => `${API_PREFIX}/dialer/${token}/outcall`,
+    connectCall: (token, callId) => `${API_PREFIX}/dialer/${token}/calls/${callId}/connect`,
+    completeCall: (token, callId) => `${API_PREFIX}/dialer/${token}/calls/${callId}/complete`,
+    messages: (token) => `${API_PREFIX}/dialer/${token}/messages`,
+    replyMessage: (token, messageId) => `${API_PREFIX}/dialer/${token}/messages/${messageId}/reply`,
+    sessions: `${API_PREFIX}/dialer/sessions`,
+    status: (token) => `${API_PREFIX}/dialer/${token}/status`,
   },
   leads: {
-    list: '/leads',
-    create: '/leads',
-    update: (leadId) => `/leads/${leadId}`,
+    list: `${API_PREFIX}/leads`,
+    create: `${API_PREFIX}/leads`,
+    update: (leadId) => `${API_PREFIX}/leads/${leadId}`,
   },
   google: {
-    calendarEvents: '/google/calendar/events',
-    token: '/google/oauth/token',
+    calendarEvents: `${API_PREFIX}/google/calendar/events`,
+    token: `${API_PREFIX}/google/oauth/token`,
   },
   whatsapp: {
-    chats: '/whatsapp/chats',
-    messages: (chatId) => `/whatsapp/chats/${encodeURIComponent(chatId)}/messages`,
-    reset: '/whatsapp/reset',
-    sendMessage: (chatId) => `/whatsapp/chats/${encodeURIComponent(chatId)}/messages`,
-    start: '/whatsapp/start',
-    status: '/whatsapp/status',
+    chats: `${API_PREFIX}/whatsapp/chats`,
+    messages: (chatId) => `${API_PREFIX}/whatsapp/chats/${encodeURIComponent(chatId)}/messages`,
+    reset: `${API_PREFIX}/whatsapp/reset`,
+    sendMessage: (chatId) => `${API_PREFIX}/whatsapp/chats/${encodeURIComponent(chatId)}/messages`,
+    start: `${API_PREFIX}/whatsapp/start`,
+    status: `${API_PREFIX}/whatsapp/status`,
   },
-  reports: '/reports',
+  reports: `${API_PREFIX}/reports`,
   settings: {
-    smtp: '/settings/smtp',
+    smtp: `${API_PREFIX}/settings/smtp`,
   },
   messages: {
-    create: '/messages',
-    mine: '/messages/mine',
-    reply: (messageId) => `/messages/${messageId}/reply`,
+    create: `${API_PREFIX}/messages`,
+    mine: `${API_PREFIX}/messages/mine`,
+    reply: (messageId) => `${API_PREFIX}/messages/${messageId}/reply`,
   },
   marketing: {
-    sendEmail: '/marketing/email/send',
-    emailCampaigns: '/marketing/email/campaigns',
-    scheduleEmail: '/marketing/email/schedule',
-    syncInbox: '/marketing/email/sync-inbox',
-    tracking: '/marketing/email/tracking',
-    updateEmailCampaign: (campaignId) => `/marketing/email/campaigns/${campaignId}`,
+    sendEmail: `${API_PREFIX}/marketing/email/send`,
+    emailCampaigns: `${API_PREFIX}/marketing/email/campaigns`,
+    scheduleEmail: `${API_PREFIX}/marketing/email/schedule`,
+    syncInbox: `${API_PREFIX}/marketing/email/sync-inbox`,
+    tracking: `${API_PREFIX}/marketing/email/tracking`,
+    updateEmailCampaign: (campaignId) => `${API_PREFIX}/marketing/email/campaigns/${campaignId}`,
   },
   staff: {
-    list: '/staff',
-    update: (staffId) => `/staff/${staffId}`,
-    delete: (staffId) => `/staff/${staffId}`,
-    bulkDelete: '/staff/bulk-delete',
+    list: `${API_PREFIX}/staff`,
+    update: (staffId) => `${API_PREFIX}/staff/${staffId}`,
+    delete: (staffId) => `${API_PREFIX}/staff/${staffId}`,
+    bulkDelete: `${API_PREFIX}/staff/bulk-delete`,
   },
 }
