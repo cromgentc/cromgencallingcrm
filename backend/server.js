@@ -31,7 +31,47 @@ const frontendDistPath = fs.existsSync(path.join(__dirname, 'public', 'index.htm
   : path.resolve(__dirname, '../frontend/dist')
 const frontendIndexPath = path.join(frontendDistPath, 'index.html')
 
-app.use(cors())
+const defaultAllowedOrigins = [
+  'https://cromgencallingcrm.vercel.app',
+  'https://cromgen-callingcrm.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+]
+const allowedOrigins = (process.env.CORS_ORIGINS || defaultAllowedOrigins.join(','))
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+
+function isAllowedOrigin(origin = '') {
+  return !origin || allowedOrigins.includes(origin)
+}
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin || ''
+  if (isAllowedOrigin(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*')
+  }
+  res.setHeader('Vary', 'Origin')
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] || 'Content-Type, Authorization')
+  res.setHeader('Access-Control-Max-Age', '86400')
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204)
+  }
+
+  next()
+})
+
+app.use(cors({
+  origin(origin, callback) {
+    if (isAllowedOrigin(origin)) {
+      callback(null, true)
+      return
+    }
+    callback(new Error('Not allowed by CORS'))
+  },
+}))
 app.use(express.json())
 
 app.get('/api/health', (req, res) => {
