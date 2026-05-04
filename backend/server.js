@@ -25,6 +25,7 @@ const { startEmailScheduler } = require('./services/emailSchedulerService')
 
 const app = express()
 const PORT = process.env.PORT || 5000
+let startupPromise = null
 const frontendDistPath = fs.existsSync(path.join(__dirname, 'public', 'index.html'))
   ? path.join(__dirname, 'public')
   : path.resolve(__dirname, '../frontend/dist')
@@ -89,14 +90,35 @@ app.use((error, req, res, next) => {
   })
 })
 
-connectDB()
-  .then(() => {
-    startEmailScheduler()
-    app.listen(PORT, () => {
-      console.log(`CallTrack API running on http://localhost:${PORT}`)
+function startServer({ listen = true, scheduler = true } = {}) {
+  if (!startupPromise) {
+    startupPromise = connectDB().then(() => {
+      if (scheduler) {
+        startEmailScheduler()
+      }
+      return app
     })
-  })
-  .catch((error) => {
-    console.error('MongoDB connection failed:', error.message)
-    process.exit(1)
-  })
+  }
+
+  if (listen) {
+    startupPromise
+      .then(() => {
+        app.listen(PORT, () => {
+          console.log(`CallTrack API running on http://localhost:${PORT}`)
+        })
+      })
+      .catch((error) => {
+        console.error('MongoDB connection failed:', error.message)
+        process.exit(1)
+      })
+  }
+
+  return startupPromise
+}
+
+if (require.main === module) {
+  startServer()
+}
+
+module.exports = app
+module.exports.startServer = startServer

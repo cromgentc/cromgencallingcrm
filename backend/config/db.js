@@ -14,6 +14,15 @@ async function ensureCustomerQueueIndexes() {
 }
 
 async function connectDB() {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection
+  }
+
+  if (mongoose.connection.readyState === 2) {
+    await mongoose.connection.asPromise()
+    return mongoose.connection
+  }
+
   const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI
 
   if (!mongoUri) {
@@ -25,6 +34,8 @@ async function connectDB() {
 
   await ensureCustomerQueueIndexes()
   await seedDashboardData()
+
+  return mongoose.connection
 }
 
 module.exports = { connectDB }
