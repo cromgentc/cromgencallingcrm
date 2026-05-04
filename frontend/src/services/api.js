@@ -1,4 +1,4 @@
-const defaultApiUrl = import.meta.env.DEV ? 'http://localhost:5000' : 'https://cromgen-callingcrm.onrender.com'
+const defaultApiUrl = import.meta.env.DEV ? 'http://localhost:5000' : 'https://cromgencallingcrm.onrender.com'
 
 export const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl
 export const APP_URL = API_URL.replace(/\/+$/, '')
