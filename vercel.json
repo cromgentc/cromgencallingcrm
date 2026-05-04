@@ -5,13 +5,18 @@
   "functions": {
     "api/[...path].js": {
       "includeFiles": "backend/**"
+    },
+    "api/auth/login.js": {
+      "includeFiles": "backend/**"
+    },
+    "api/dashboard.js": {
+      "includeFiles": "backend/**"
+    },
+    "api/health.js": {
+      "includeFiles": "backend/**"
     }
   },
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

@@ -6,8 +6,6 @@ let ready
 module.exports = async function handler(req, res) {
   ready ||= startServer({ listen: false, scheduler: false })
   await ready
-  if (!req.url.startsWith('/api/')) {
-    req.url = `/api${req.url.startsWith('/') ? req.url : `/${req.url}`}`
-  }
+  req.url = '/api/dashboard'
   return app(req, res)
 }
